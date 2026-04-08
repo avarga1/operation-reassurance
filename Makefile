@@ -1,4 +1,4 @@
-.PHONY: check test lint fmt fix install clean
+.PHONY: check test lint fmt fix install clean gui
 
 # Run everything — same as CI. Do this before pushing.
 check: lint test
@@ -14,6 +14,9 @@ lint:
 fix:
 	python3 -m ruff check --fix reassure/ cli.py
 	python3 -m ruff format reassure/ cli.py
+
+gui:
+	PYTHONPATH=$(shell pwd) streamlit run reassure/gui/app.py
 
 install:
 	poetry install --no-interaction
