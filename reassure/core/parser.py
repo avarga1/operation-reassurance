@@ -22,7 +22,7 @@ EXTENSION_MAP: dict[str, str] = {
     ".tsx": "typescript",
     ".js": "javascript",
     ".jsx": "javascript",
-    ".dart": "dart",
+    # ".dart": "dart",  # TODO: add when tree-sitter-dart is on PyPI
 }
 
 _LANGUAGE_CACHE: dict[str, Language] = {}
