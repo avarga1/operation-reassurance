@@ -62,12 +62,13 @@ def main(
     show_passed: bool,
 ) -> None:
     """Analyze repo health at PATH using static CST/AST analysis."""
+    from reassure.analyzers.observability import analyze_observability
     from reassure.analyzers.test_coverage import analyze_coverage
     from reassure.classifiers.test_type import classify_test_file
     from reassure.core.repo_walker import walk_repo
-    from reassure.output.terminal import render_coverage
+    from reassure.output.terminal import render_coverage, render_observability
 
-    run = set(only) if only else {"coverage"}  # only coverage implemented so far
+    run = set(only) if only else {"coverage", "observability"}
 
     with console.status(f"[bold cyan]Walking {path} …"):
         index = walk_repo(path)
@@ -90,6 +91,22 @@ def main(
             render_coverage(report, show_passed=show_passed, root=path)
         else:
             results["coverage"] = _coverage_to_dict(report)
+
+    if "observability" in run:
+        obs_report = analyze_observability(index)
+        if output == "terminal":
+            render_observability(obs_report, root=path)
+        else:
+            results["observability"] = {
+                "dark_pct": obs_report.dark_pct,
+                "dark_functions": obs_report.dark_functions,
+                "total_functions": obs_report.total_functions,
+                "dark_modules": [str(p) for p in obs_report.dark_module_paths],
+                "gaps": [
+                    {"name": g.symbol.name, "file": str(g.symbol.file), "line": g.symbol.line_start}
+                    for g in obs_report.gaps
+                ],
+            }
 
     if output == "json" or out:
         payload = json.dumps(results, indent=2, default=str)
