@@ -48,10 +48,9 @@ def _file_explorer() -> Path | None:
     st.markdown(f"**📂 {current}**")
 
     # Up button
-    if current.parent != current:
-        if st.button("⬆ Up", use_container_width=True):
-            st.session_state.browser_path = current.parent
-            st.rerun()
+    if current.parent != current and st.button("⬆ Up", use_container_width=True):
+        st.session_state.browser_path = current.parent
+        st.rerun()
 
     # List visible subdirectories
     try:
