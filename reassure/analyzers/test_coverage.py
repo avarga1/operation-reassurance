@@ -6,16 +6,16 @@ what type those tests are — without executing any code.
 
 Resolution strategy:
   1. Direct name match: test file imports or calls `symbol.name`
-  2. Class-level match: test file imports the parent class
-  3. Fuzzy match: test file name mirrors source file name (test_foo.py → foo.py)
-
-Output is a CoverageReport mapping each symbol to its test coverage.
+  2. Fuzzy match: test file name mirrors source file name (test_foo.py → foo.py)
 """
 
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from tree_sitter import Node
+
 from reassure.classifiers.test_type import TestClassification, TestType
+from reassure.core.parser import parse_file
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.core.symbol_map import Symbol
 
@@ -41,8 +41,14 @@ class SymbolCoverage:
 @dataclass
 class CoverageReport:
     symbols: list[SymbolCoverage]
-    total_symbols: int
-    covered_symbols: int
+
+    @property
+    def total_symbols(self) -> int:
+        return len(self.symbols)
+
+    @property
+    def covered_symbols(self) -> int:
+        return sum(1 for s in self.symbols if not s.is_uncovered)
 
     @property
     def coverage_pct(self) -> float:
@@ -75,22 +81,120 @@ def analyze_coverage(
     For each source symbol, finds all test files that reference it
     and groups them by test type.
     """
-    # TODO: implement
-    # 1. Build a lookup: test_file → set of symbol names it references
-    #    (via import + call site analysis on the test CST)
-    # 2. For each source symbol, find matching test files
-    # 3. Group by TestType using the classifications map
-    # 4. Build SymbolCoverage records
-    raise NotImplementedError
+    reference_map = _build_test_reference_map(index.test_files)
+
+    symbol_coverages = []
+    for symbol in index.all_symbols:
+        tests_by_type: dict[TestType, list[Path]] = {}
+
+        for test_file, refs in reference_map.items():
+            if not _symbol_is_referenced(symbol, refs, test_file):
+                continue
+
+            classification = classifications.get(test_file)
+            test_type = classification.primary if classification else TestType.UNKNOWN
+            tests_by_type.setdefault(test_type, []).append(test_file)
+
+        symbol_coverages.append(SymbolCoverage(symbol=symbol, tests_by_type=tests_by_type))
+
+    return CoverageReport(symbols=symbol_coverages)
 
 
-def _build_test_reference_map(
-    test_files: list[FileRecord],
-) -> dict[Path, set[str]]:
+def _symbol_is_referenced(symbol: Symbol, refs: set[str], test_file: Path) -> bool:
+    """
+    Check if a symbol is referenced by a test file.
+
+    Uses two strategies:
+    1. Direct: symbol name appears in the test file's reference set
+    2. Fuzzy: test file name matches source file name (test_foo.py → foo.py)
+    """
+    # Direct name match
+    if symbol.name in refs:
+        return True
+
+    # Fuzzy: test_auth_service.py covers auth/service.py
+    stem = test_file.stem.lower().removeprefix("test_").removesuffix("_test")
+    return bool(
+        stem
+        and stem in symbol.file.stem.lower()
+        and symbol.file.stem.lower() in {r.lower() for r in refs}
+    )
+
+
+def _build_test_reference_map(test_files: list[FileRecord]) -> dict[Path, set[str]]:
     """
     For each test file, extract the set of symbol names it references.
-    Uses import analysis + function call site extraction from the CST.
+
+    Collects:
+    - Imported names (from x import Foo, Bar)
+    - Top-level module imports (import sqlalchemy)
+    - Direct call identifiers (AuthService(), svc.login())
     """
-    # TODO: implement
-    # Walk test CST: collect imported names + all identifier nodes in call positions
-    raise NotImplementedError
+    result: dict[Path, set[str]] = {}
+
+    for record in test_files:
+        parsed = parse_file(record.path)
+        if parsed is None:
+            result[record.path] = set()
+            continue
+
+        tree, source = parsed
+        refs: set[str] = set()
+        _collect_references(tree.root_node, source, refs)
+        result[record.path] = refs
+
+    return result
+
+
+def _collect_references(node: Node, source: str, refs: set[str]) -> None:
+    """Recursively walk a CST node and collect all referenced identifiers."""
+    if node.type == "import_statement":
+        # import sqlalchemy  →  "sqlalchemy"
+        for child in node.children:
+            if child.type in ("dotted_name", "aliased_import"):
+                name = _first_identifier(child, source)
+                if name:
+                    refs.add(name)
+
+    elif node.type == "import_from_statement":
+        # from src.auth.service import AuthService, login
+        # collect each imported name
+        collecting = False
+        for child in node.children:
+            if child.type == "import":
+                collecting = True
+                continue
+            if collecting and child.type in ("dotted_name", "aliased_import", "wildcard_import"):
+                name = _first_identifier(child, source)
+                if name:
+                    refs.add(name)
+
+    elif node.type == "call":
+        # AuthService() or svc.login() — collect the callable name
+        func = node.child_by_field_name("function")
+        if func:
+            if func.type == "identifier":
+                refs.add(_node_text(func, source))
+            elif func.type == "attribute":
+                # svc.login → collect "login"
+                attr = func.child_by_field_name("attribute")
+                if attr:
+                    refs.add(_node_text(attr, source))
+
+    for child in node.children:
+        _collect_references(child, source, refs)
+
+
+def _first_identifier(node: Node, source: str) -> str | None:
+    """Return the text of the first identifier child of a node."""
+    if node.type == "identifier":
+        return _node_text(node, source)
+    for child in node.children:
+        if child.type == "identifier":
+            return _node_text(child, source)
+    return None
+
+
+def _node_text(node: Node, source: str) -> str:
+    """Extract node text using byte offsets (correct for multi-byte Unicode)."""
+    return source.encode()[node.start_byte : node.end_byte].decode("utf-8", errors="replace")

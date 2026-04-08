@@ -39,6 +39,7 @@ def extract_symbols(tree: Tree, source: str, file: Path, lang: str) -> list[Symb
         "rust": _extract_rust,
         "typescript": _extract_typescript,
         "javascript": _extract_javascript,
+        "dart": _extract_dart,
     }
     extractor = extractors.get(lang)
     if extractor is None:
@@ -209,6 +210,99 @@ def _extract_javascript(root: Node, source: str, file: Path) -> list[Symbol]:
     return _extract_typescript(root, source, file)
 
 
+def _extract_dart(root: Node, source: str, file: Path) -> list[Symbol]:
+    """
+    Extract Dart classes, top-level functions, and methods.
+
+    CST layout:
+    - class_definition: identifier + class_body
+    - class_body children: method_signature (+ function_body sibling)
+    - method_signature children: function_signature with identifier
+    - top-level function_signature: direct child of program node
+    """
+    symbols: list[Symbol] = []
+    _walk_dart(root, source, file, symbols, parent_class=None)
+    return symbols
+
+
+def _walk_dart(
+    node: Node,
+    source: str,
+    file: Path,
+    symbols: list[Symbol],
+    parent_class: str | None,
+) -> None:
+    for child in node.children:
+        if child.type == "class_definition":
+            name = _child_text(child, "identifier", source)
+            if name:
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind="class",
+                        file=file,
+                        line_start=child.start_point[0] + 1,
+                        line_end=child.end_point[0] + 1,
+                        lang="dart",
+                        is_public=not name.startswith("_"),
+                        parent_class=parent_class,
+                    )
+                )
+                body = _first_child_of_type(child, "class_body")
+                if body:
+                    _walk_dart(body, source, file, symbols, parent_class=name)
+
+        elif child.type == "method_signature":
+            # method_signature > function_signature > identifier
+            func_sig = _first_child_of_type(child, "function_signature")
+            if func_sig:
+                _extract_dart_function(child, func_sig, source, file, symbols, parent_class)
+
+        elif child.type == "function_signature" and parent_class is None:
+            # Top-level function: function_signature at program level
+            # Find the matching function_body (next sibling handled by parent walker)
+            # The function_signature IS the declaration node for line range
+            _extract_dart_function(child, child, source, file, symbols, parent_class=None)
+
+        else:
+            _walk_dart(child, source, file, symbols, parent_class)
+
+
+def _extract_dart_function(
+    outer: Node,
+    func_sig: Node,
+    source: str,
+    file: Path,
+    symbols: list[Symbol],
+    parent_class: str | None,
+) -> None:
+    """Extract a single Dart function or method from a function_signature node."""
+    name = _child_text(func_sig, "identifier", source)
+    if not name:
+        return
+
+    # async marker lives in function_body sibling — check parent's children
+    is_async = any(
+        sib.type == "function_body" and any(c.type == "async" for c in sib.children)
+        for sib in (outer.parent.children if outer.parent else [])
+    )
+
+    kind = "method" if parent_class else "function"
+    symbols.append(
+        Symbol(
+            name=name,
+            kind=kind,
+            file=file,
+            line_start=outer.start_point[0] + 1,
+            line_end=outer.end_point[0] + 1,
+            lang="dart",
+            parent_class=parent_class,
+            is_async=is_async,
+            is_public=not name.startswith("_"),
+        )
+    )
+
+
 def _node_text(node: Node, source: str) -> str:
     """Extract the text content of a CST node from the source string."""
-    return source[node.start_byte : node.end_byte]
+    return source.encode()[node.start_byte : node.end_byte].decode("utf-8", errors="replace")

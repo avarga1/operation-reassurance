@@ -10,11 +10,16 @@ Usage:
   streamlit run reassure/gui/app.py     # GUI dashboard
 """
 
+import json
+import sys
 from pathlib import Path
+from typing import Any
 
 import click
+from rich.console import Console
 
 ANALYZERS = ["coverage", "observability", "dead_code", "solid", "metrics"]
+console = Console()
 
 
 @click.command()
@@ -46,7 +51,7 @@ ANALYZERS = ["coverage", "observability", "dead_code", "solid", "metrics"]
     default=None,
     help="Path to .reassure.toml config file.",
 )
-@click.option("--show-passed", is_flag=True, default=False, help="Show clean files too.")
+@click.option("--show-passed", is_flag=True, default=False, help="Show covered symbols too.")
 @click.version_option()
 def main(
     path: Path,
@@ -57,12 +62,59 @@ def main(
     show_passed: bool,
 ) -> None:
     """Analyze repo health at PATH using static CST/AST analysis."""
-    # TODO: implement
-    # 1. Load config from .reassure.toml (auto-detect if not specified)
-    # 2. Walk repo → RepoIndex
-    # 3. Run selected analyzers
-    # 4. Render via terminal or json_export
-    raise NotImplementedError
+    from reassure.analyzers.test_coverage import analyze_coverage
+    from reassure.classifiers.test_type import classify_test_file
+    from reassure.core.repo_walker import walk_repo
+    from reassure.output.terminal import render_coverage
+
+    run = set(only) if only else {"coverage"}  # only coverage implemented so far
+
+    with console.status(f"[bold cyan]Walking {path} …"):
+        index = walk_repo(path)
+
+    console.print(
+        f"  [dim]{len(index.files)} files[/dim]  "
+        f"[dim]{len(index.all_symbols)} symbols[/dim]  "
+        f"[dim]{len(index.test_files)} test files[/dim]"
+    )
+
+    results: dict[str, Any] = {}
+
+    if "coverage" in run:
+        classifications = {
+            f.path: classify_test_file(f.path, list(f.imports), []) for f in index.test_files
+        }
+        report = analyze_coverage(index, classifications)
+
+        if output == "terminal":
+            render_coverage(report, show_passed=show_passed, root=path)
+        else:
+            results["coverage"] = _coverage_to_dict(report)
+
+    if output == "json" or out:
+        payload = json.dumps(results, indent=2, default=str)
+        if out:
+            out.write_text(payload)
+            console.print(f"[green]Written to {out}[/green]")
+        else:
+            sys.stdout.write(payload + "\n")
+
+
+def _coverage_to_dict(report: "CoverageReport") -> dict[str, Any]:  # noqa: F821
+    return {
+        "coverage_pct": report.coverage_pct,
+        "total_symbols": report.total_symbols,
+        "covered_symbols": report.covered_symbols,
+        "uncovered": [
+            {
+                "name": sc.symbol.name,
+                "kind": sc.symbol.kind,
+                "file": str(sc.symbol.file),
+                "line_start": sc.symbol.line_start,
+            }
+            for sc in report.uncovered
+        ],
+    }
 
 
 if __name__ == "__main__":

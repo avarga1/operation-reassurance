@@ -9,6 +9,7 @@ Responsible for:
 
 from pathlib import Path
 
+import tree_sitter_dart
 import tree_sitter_javascript
 import tree_sitter_python
 import tree_sitter_rust
@@ -22,7 +23,7 @@ EXTENSION_MAP: dict[str, str] = {
     ".tsx": "typescript",
     ".js": "javascript",
     ".jsx": "javascript",
-    # ".dart": "dart",  # TODO: add when tree-sitter-dart is on PyPI
+    ".dart": "dart",
 }
 
 _LANGUAGE_CACHE: dict[str, Language] = {}
@@ -42,6 +43,7 @@ def get_language(lang: str) -> Language | None:
         "rust": tree_sitter_rust.language(),
         "javascript": tree_sitter_javascript.language(),
         "typescript": tree_sitter_typescript.language_typescript(),
+        "dart": tree_sitter_dart.language(),
     }
 
     if lang not in grammar_map:

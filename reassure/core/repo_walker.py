@@ -56,14 +56,24 @@ DEFAULT_IGNORE = {
     ".mypy_cache",
     ".ruff_cache",
     ".pytest_cache",
+    # Flutter / Dart generated dirs
+    ".dart_tool",
+    ".flutter-plugins",
+    ".flutter-plugins-dependencies",
+    "ephemeral",
+    "GeneratedPluginRegistrant",
 }
 
 TEST_PATH_HINTS = {"test", "tests", "spec", "specs", "__tests__"}
 
 
-def is_test_file(path: Path) -> bool:
-    """Heuristic: is this file a test file?"""
-    parts = set(path.parts)
+def is_test_file(path: Path, root: Path | None = None) -> bool:
+    """
+    Heuristic: is this file a test file?
+    Uses path relative to root to avoid false positives from parent directories.
+    """
+    relative = path.relative_to(root) if root else path
+    parts = set(relative.parts)
     if parts & TEST_PATH_HINTS:
         return True
     name = path.stem.lower()
@@ -106,7 +116,7 @@ def walk_repo(
             lang=lang,
             symbols=symbols,
             loc=loc,
-            is_test=is_test_file(path),
+            is_test=is_test_file(path, root),
         )
         index.files.append(record)
 
