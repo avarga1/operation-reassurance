@@ -8,14 +8,12 @@ Responsible for:
 """
 
 from pathlib import Path
-from typing import Optional
 
+import tree_sitter_javascript
 import tree_sitter_python
 import tree_sitter_rust
-import tree_sitter_javascript
 import tree_sitter_typescript
 from tree_sitter import Language, Parser, Tree
-
 
 EXTENSION_MAP: dict[str, str] = {
     ".py": "python",
@@ -30,7 +28,7 @@ EXTENSION_MAP: dict[str, str] = {
 _LANGUAGE_CACHE: dict[str, Language] = {}
 
 
-def get_language(lang: str) -> Optional[Language]:
+def get_language(lang: str) -> Language | None:
     """
     Return a cached tree-sitter Language for the given language name.
     Returns None if the language grammar is not available.
@@ -54,12 +52,12 @@ def get_language(lang: str) -> Optional[Language]:
     return language
 
 
-def detect_language(path: Path) -> Optional[str]:
+def detect_language(path: Path) -> str | None:
     """Detect language from file extension. Returns None for unknown types."""
     return EXTENSION_MAP.get(path.suffix.lower())
 
 
-def parse_file(path: Path) -> Optional[tuple[Tree, str]]:
+def parse_file(path: Path) -> tuple[Tree, str] | None:
     """
     Parse a source file into a CST tree.
 
@@ -79,7 +77,7 @@ def parse_file(path: Path) -> Optional[tuple[Tree, str]]:
     return tree, source.decode("utf-8", errors="replace")
 
 
-def parse_source(source: str, lang: str) -> Optional[Tree]:
+def parse_source(source: str, lang: str) -> Tree | None:
     """Parse a raw source string given an explicit language name."""
     language = get_language(lang)
     if language is None:

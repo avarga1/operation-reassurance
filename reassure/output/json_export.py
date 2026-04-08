@@ -5,15 +5,14 @@ Serializes all analyzer reports to a structured JSON format suitable
 for CI artifact storage, dashboards, or downstream tooling.
 """
 
-import json
 from pathlib import Path
 from typing import Any
 
-from reassure.analyzers.test_coverage import CoverageReport
-from reassure.analyzers.observability import ObservabilityReport
 from reassure.analyzers.dead_code import DeadCodeReport
-from reassure.analyzers.solid import SolidReport
 from reassure.analyzers.metrics import RepoMetrics
+from reassure.analyzers.observability import ObservabilityReport
+from reassure.analyzers.solid import SolidReport
+from reassure.analyzers.test_coverage import CoverageReport
 
 
 def export_all(

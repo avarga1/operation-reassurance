@@ -9,7 +9,6 @@ Respects .reassure.toml ignore rules and .gitignore if present.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from reassure.core.parser import detect_language, parse_file
 from reassure.core.symbol_map import Symbol, extract_symbols
@@ -44,9 +43,19 @@ class RepoIndex:
 
 
 DEFAULT_IGNORE = {
-    "__pycache__", ".venv", "venv", "env", ".env",
-    "node_modules", "dist", "build", "target", ".git",
-    ".mypy_cache", ".ruff_cache", ".pytest_cache",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env",
+    ".env",
+    "node_modules",
+    "dist",
+    "build",
+    "target",
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
 }
 
 TEST_PATH_HINTS = {"test", "tests", "spec", "specs", "__tests__"}
@@ -63,7 +72,7 @@ def is_test_file(path: Path) -> bool:
 
 def walk_repo(
     root: Path,
-    ignore: Optional[set[str]] = None,
+    ignore: set[str] | None = None,
 ) -> RepoIndex:
     """
     Walk a repository root and build a full RepoIndex.

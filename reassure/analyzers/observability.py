@@ -23,7 +23,7 @@ from reassure.core.symbol_map import Symbol
 @dataclass
 class ObservabilityGap:
     symbol: Symbol
-    reason: str     # "no logging", "no tracing", "completely dark"
+    reason: str  # "no logging", "no tracing", "completely dark"
 
 
 @dataclass

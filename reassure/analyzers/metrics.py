@@ -33,7 +33,7 @@ class RepoMetrics:
     source_loc: int
     test_loc: int
     test_to_source_ratio: float
-    language_breakdown: dict[str, int]      # lang → LOC
+    language_breakdown: dict[str, int]  # lang → LOC
     file_metrics: list[FileMetrics] = field(default_factory=list)
     churn_hotspots: list[tuple[Path, int, float]] = field(default_factory=list)
     # churn_hotspots: (file, git_churn_count, avg_complexity) — danger zones

@@ -26,7 +26,7 @@ from reassure.core.symbol_map import Symbol
 @dataclass
 class GodFile:
     file: FileRecord
-    reasons: list[str]      # e.g. ["500+ LOC", "23 functions"]
+    reasons: list[str]  # e.g. ["500+ LOC", "23 functions"]
 
 
 @dataclass
@@ -39,12 +39,12 @@ class GodClass:
 @dataclass
 class GodFunction:
     symbol: Symbol
-    complexity: int         # cyclomatic complexity score
+    complexity: int  # cyclomatic complexity score
 
 
 @dataclass
 class CircularImport:
-    cycle: list[Path]       # the import cycle path
+    cycle: list[Path]  # the import cycle path
 
 
 @dataclass
@@ -57,12 +57,14 @@ class SolidReport:
 
     @property
     def has_issues(self) -> bool:
-        return any([
-            self.god_files,
-            self.god_classes,
-            self.god_functions,
-            self.circular_imports,
-        ])
+        return any(
+            [
+                self.god_files,
+                self.god_classes,
+                self.god_functions,
+                self.circular_imports,
+            ]
+        )
 
 
 def analyze_solid(

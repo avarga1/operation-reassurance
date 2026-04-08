@@ -16,7 +16,6 @@ Caveats (documented, not silently ignored):
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from reassure.core.repo_walker import RepoIndex
 from reassure.core.symbol_map import Symbol
@@ -25,7 +24,7 @@ from reassure.core.symbol_map import Symbol
 @dataclass
 class DeadSymbol:
     symbol: Symbol
-    confidence: str     # "high" | "medium" | "low"
+    confidence: str  # "high" | "medium" | "low"
     caveat: str | None  # reason confidence isn't high
 
 

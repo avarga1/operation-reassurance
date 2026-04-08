@@ -58,10 +58,10 @@ class CoverageReport:
     def unit_only(self) -> list[SymbolCoverage]:
         """Symbols covered only by unit tests — no integration or e2e."""
         return [
-            s for s in self.symbols
-            if s.has_unit_tests and not any(
-                k in s.tests_by_type for k in [TestType.INTEGRATION, TestType.E2E]
-            )
+            s
+            for s in self.symbols
+            if s.has_unit_tests
+            and not any(k in s.tests_by_type for k in [TestType.INTEGRATION, TestType.E2E])
         ]
 
 

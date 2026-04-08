@@ -69,7 +69,7 @@ MARKER_SIGNALS: dict[str, TestType] = {
 @dataclass
 class TestClassification:
     primary: TestType
-    signals: list[str]       # human-readable reasons for the classification
+    signals: list[str]  # human-readable reasons for the classification
 
 
 def classify_test_file(
@@ -115,10 +115,9 @@ def classify_test_file(
 
 
 def classify_all(
-    test_files: list[tuple[Path, list[str], list[str]]]
+    test_files: list[tuple[Path, list[str], list[str]]],
 ) -> dict[Path, TestClassification]:
     """Classify a batch of test files. Returns path → classification map."""
     return {
-        path: classify_test_file(path, imports, markers)
-        for path, imports, markers in test_files
+        path: classify_test_file(path, imports, markers) for path, imports, markers in test_files
     }

@@ -7,16 +7,13 @@ CLI callers can pick what to show.
 """
 
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich import box
 from rich.text import Text
 
-from reassure.analyzers.test_coverage import CoverageReport
-from reassure.analyzers.observability import ObservabilityReport
 from reassure.analyzers.dead_code import DeadCodeReport
-from reassure.analyzers.solid import SolidReport
 from reassure.analyzers.metrics import RepoMetrics
+from reassure.analyzers.observability import ObservabilityReport
+from reassure.analyzers.solid import SolidReport
+from reassure.analyzers.test_coverage import CoverageReport
 
 console = Console()
 

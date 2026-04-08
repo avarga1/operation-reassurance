@@ -10,9 +10,9 @@ Usage:
   streamlit run reassure/gui/app.py     # GUI dashboard
 """
 
-import click
 from pathlib import Path
 
+import click
 
 ANALYZERS = ["coverage", "observability", "dead_code", "solid", "metrics"]
 
@@ -26,19 +26,22 @@ ANALYZERS = ["coverage", "observability", "dead_code", "solid", "metrics"]
     help="Run only specific analyzers. Can be repeated.",
 )
 @click.option(
-    "--output", "-f",
+    "--output",
+    "-f",
     type=click.Choice(["terminal", "json"]),
     default="terminal",
     show_default=True,
 )
 @click.option(
-    "--out", "-o",
+    "--out",
+    "-o",
     type=click.Path(dir_okay=False, writable=True, path_type=Path),
     default=None,
     help="Write JSON output to file (implies --output json).",
 )
 @click.option(
-    "--config", "-c",
+    "--config",
+    "-c",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     default=None,
     help="Path to .reassure.toml config file.",

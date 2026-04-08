@@ -13,7 +13,6 @@ Sections:
 """
 
 import streamlit as st
-from pathlib import Path
 
 
 def main() -> None:
@@ -28,13 +27,13 @@ def main() -> None:
 
     # Sidebar: repo path input + analyzer toggles
     with st.sidebar:
-        repo_path = st.text_input("Repository path", value=".")
+        _repo_path = st.text_input("Repository path", value=".")
         st.divider()
-        run_coverage = st.checkbox("Test Coverage", value=True)
-        run_observability = st.checkbox("Observability", value=True)
-        run_dead_code = st.checkbox("Dead Code", value=True)
-        run_solid = st.checkbox("SOLID Health", value=True)
-        run_metrics = st.checkbox("Metrics", value=True)
+        _run_coverage = st.checkbox("Test Coverage", value=True)
+        _run_observability = st.checkbox("Observability", value=True)
+        _run_dead_code = st.checkbox("Dead Code", value=True)
+        _run_solid = st.checkbox("SOLID Health", value=True)
+        _run_metrics = st.checkbox("Metrics", value=True)
         analyze = st.button("Analyze", type="primary", use_container_width=True)
 
     if not analyze:
