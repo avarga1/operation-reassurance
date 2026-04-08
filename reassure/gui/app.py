@@ -36,51 +36,16 @@ _IGNORE = {
 
 
 def _file_explorer() -> Path | None:
-    """
-    Sidebar directory navigator.
-    Returns the selected Path when the user confirms, else None.
-    """
-    if "browser_path" not in st.session_state:
-        st.session_state.browser_path = Path.home()
-
-    current = Path(st.session_state.browser_path)
-
-    st.markdown(f"**📂 {current}**")
-
-    # Up button
-    if current.parent != current and st.button("⬆ Up", use_container_width=True):
-        st.session_state.browser_path = current.parent
-        st.rerun()
-
-    # List visible subdirectories
-    try:
-        subdirs = sorted(
-            [
-                d
-                for d in current.iterdir()
-                if d.is_dir() and d.name not in _IGNORE and not d.name.startswith(".")
-            ],
-            key=lambda d: d.name.lower(),
-        )
-    except PermissionError:
-        subdirs = []
-
-    if subdirs:
-        for d in subdirs:
-            if st.button(f"📁 {d.name}", key=str(d), use_container_width=True):
-                st.session_state.browser_path = d
-                st.rerun()
-    else:
-        st.caption("_(no subdirectories)_")
-
-    st.divider()
-
-    # Confirm selection
-    if st.button(f"✅ Select  `{current.name}`", type="primary", use_container_width=True):
-        st.session_state.selected_path = current
-        st.rerun()
-
-    return st.session_state.get("selected_path")
+    """Sidebar repo picker — paste a directory path."""
+    raw = st.text_input("Repository path", placeholder="/Users/you/my-repo")
+    if not raw:
+        return None
+    p = Path(raw).expanduser().resolve()
+    if not p.is_dir():
+        st.error("Not a valid directory.")
+        return None
+    st.caption(str(p))
+    return p
 
 
 def main() -> None:
