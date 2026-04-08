@@ -80,14 +80,38 @@ def classify_test_file(
     """
     Classify a test file into a TestType using multi-signal heuristics.
 
-    Priority: explicit marker > path fragment > import signal > UNKNOWN
+    Priority: explicit marker > path fragment > import signal > UNIT fallback
+    Returns the highest-priority signal found, with all matching signals recorded.
     """
-    # TODO: implement signal resolution with priority ordering
-    # 1. Check markers (highest confidence)
-    # 2. Check path fragments
-    # 3. Check imports
-    # 4. Fall back to UNIT if it's a test file with no other signals
-    raise NotImplementedError
+    signals: list[str] = []
+
+    # 1. Markers — highest confidence, explicit developer intent
+    for marker in markers:
+        marker_clean = marker.strip()
+        for pattern, test_type in MARKER_SIGNALS.items():
+            if pattern in marker_clean:
+                signals.append(f"marker:{marker_clean}")
+                return TestClassification(primary=test_type, signals=signals)
+
+    # 2. Path fragments — check every part of the path
+    path_parts = [p.lower() for p in path.parts] + [path.stem.lower()]
+    for part in path_parts:
+        for fragment, test_type in PATH_SIGNALS.items():
+            if fragment == part or fragment in part:
+                signals.append(f"path:{part}")
+                return TestClassification(primary=test_type, signals=signals)
+
+    # 3. Import signals — infrastructure imports imply test type
+    for imp in imports:
+        imp_root = imp.split(".")[0].lower()
+        if imp_root in IMPORT_SIGNALS:
+            test_type = IMPORT_SIGNALS[imp_root]
+            signals.append(f"import:{imp_root}")
+            return TestClassification(primary=test_type, signals=signals)
+
+    # 4. Fallback — it's a test file with no strong signals, assume unit
+    signals.append("fallback:unit")
+    return TestClassification(primary=TestType.UNIT, signals=signals)
 
 
 def classify_all(
