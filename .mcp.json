@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "reassure": {
+      "command": "python3",
+      "args": ["-m", "reassure.mcp.server"],
+      "cwd": "/Users/austin/CONTRIBUTIONS/operatiom-reassurance"
+    }
+  }
+}
