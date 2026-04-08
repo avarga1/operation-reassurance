@@ -1,0 +1,35 @@
+[project]
+name = "my-project"
+languages = ["python", "rust", "typescript"]  # auto-detected if omitted
+
+[paths]
+source = ["src", "lib", "dotflow"]
+tests = ["tests", "test", "spec"]
+ignore = ["__pycache__", ".venv", "node_modules", "dist", "build", "target"]
+
+[test_types]
+# Path fragments → test type classification
+unit = ["unit", "test_unit"]
+integration = ["integration", "test_integration"]
+e2e = ["e2e", "end_to_end", "playwright", "cypress"]
+smoke = ["smoke"]
+security = ["security", "sec", "pentest"]
+
+[thresholds]
+# SOLID / god file detection
+god_file_loc = 500             # lines of code
+god_file_functions = 20        # number of functions/methods
+god_class_methods = 15         # methods per class
+max_cyclomatic_complexity = 10
+max_imports_per_file = 20      # coupling heuristic
+
+[observability]
+# Patterns that count as instrumentation
+log_patterns = ["logger.", "logging.", "log."]
+trace_patterns = ["span", "@trace", "tracer."]
+metrics_patterns = ["metrics.", "counter.", "histogram.", "gauge."]
+
+[output]
+format = "terminal"  # terminal | json | html
+color = true
+show_passed = false  # hide clean files from terminal output
