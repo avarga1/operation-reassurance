@@ -9,11 +9,33 @@ Responsible for:
 
 from pathlib import Path
 
-import tree_sitter_dart
-import tree_sitter_javascript
-import tree_sitter_python
-import tree_sitter_rust
-import tree_sitter_typescript
+# Try to import language grammars if they're installed. It's okay if some
+# grammars are missing — we'll only enable languages we can actually parse.
+try:
+    import tree_sitter_dart as _tree_sitter_dart
+except Exception:
+    _tree_sitter_dart = None
+
+try:
+    import tree_sitter_javascript as _tree_sitter_javascript
+except Exception:
+    _tree_sitter_javascript = None
+
+try:
+    import tree_sitter_python as _tree_sitter_python
+except Exception:
+    _tree_sitter_python = None
+
+try:
+    import tree_sitter_rust as _tree_sitter_rust
+except Exception:
+    _tree_sitter_rust = None
+
+try:
+    import tree_sitter_typescript as _tree_sitter_typescript
+except Exception:
+    _tree_sitter_typescript = None
+
 from tree_sitter import Language, Parser, Tree
 
 EXTENSION_MAP: dict[str, str] = {
@@ -37,15 +59,26 @@ def get_language(lang: str) -> Language | None:
     if lang in _LANGUAGE_CACHE:
         return _LANGUAGE_CACHE[lang]
 
-    # TODO: add dart, glsl when needed
-    grammar_map = {
-        "python": tree_sitter_python.language(),
-        "rust": tree_sitter_rust.language(),
-        "javascript": tree_sitter_javascript.language(),
-        "typescript": tree_sitter_typescript.language_typescript(),
-        "dart": tree_sitter_dart.language(),
-    }
+    # Only include grammars we were able to import. This builds a simple map
+    # from language name to the language object that tree-sitter expects.
+    grammar_map: dict[str, object] = {}
+    if _tree_sitter_python is not None:
+        grammar_map["python"] = _tree_sitter_python.language()
+    if _tree_sitter_rust is not None:
+        grammar_map["rust"] = _tree_sitter_rust.language()
+    if _tree_sitter_javascript is not None:
+        grammar_map["javascript"] = _tree_sitter_javascript.language()
+    if _tree_sitter_typescript is not None:
+        # some TypeScript bindings expose a helper; try the common names.
+        try:
+            grammar_map["typescript"] = _tree_sitter_typescript.language_typescript()
+        except Exception:
+            grammar_map["typescript"] = _tree_sitter_typescript.language()
+    if _tree_sitter_dart is not None:
+        grammar_map["dart"] = _tree_sitter_dart.language()
 
+    # If the requested language isn't available, return None so callers can
+    # continue gracefully.
     if lang not in grammar_map:
         return None
 

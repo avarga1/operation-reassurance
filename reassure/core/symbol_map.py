@@ -84,15 +84,22 @@ def _walk_python(
                         parent_class=parent_class,
                     )
                 )
-                # Recurse into class body with this class as parent
+                # Now walk the class body so methods get the class name as
+                # their `parent_class`.
                 body = _first_child_of_type(child, "block")
                 if body:
                     _walk_python(body, source, file, symbols, parent_class=name)
 
         elif child.type in ("function_definition", "async_function_definition"):
+            # Found a top-level function (or async function). Extract it and
+            # record whether it's a method or a free function based on the
+            # `parent_class` context.
             _extract_python_function(child, source, file, symbols, parent_class, decorators=[])
 
         elif child.type == "decorated_definition":
+            # Collect decorator names, then inspect the inner node which may
+            # be a class or a function. Decorators should be attached to the
+            # resulting Symbol so downstream code knows about them.
             decorators = _extract_decorators(child, source)
             inner = (
                 _first_child_of_type(child, "function_definition")
@@ -122,7 +129,8 @@ def _walk_python(
                 _extract_python_function(inner, source, file, symbols, parent_class, decorators)
 
         else:
-            # Recurse into other block-level constructs (if/with/try at module level)
+            # For any other node types, keep walking to find nested
+            # definitions (for example functions inside if/with/try blocks).
             _walk_python(child, source, file, symbols, parent_class)
 
 
@@ -138,7 +146,14 @@ def _extract_python_function(
     if not name:
         return
 
-    is_async = node.type == "async_function_definition"
+    # tree-sitter python may represent async functions as a `function_definition`
+    # node with an `async` child token, so detect either form.
+    # Some Python async definitions appear as a function node with an
+    # `async` child token. Check both the node type and the presence of the
+    # `async` token so we correctly mark async functions.
+    is_async = node.type == "async_function_definition" or any(
+        c.type == "async" for c in node.children
+    )
     kind = "method" if parent_class else "function"
 
     symbols.append(
@@ -162,8 +177,9 @@ def _extract_decorators(decorated_node: Node, source: str) -> list[str]:
     decorators = []
     for child in decorated_node.children:
         if child.type == "decorator":
-            # decorator body is everything after the '@'
-            text = _node_text(child, source).lstrip("@").strip().split("(")[0]
+                    # The decorator node includes the '@' symbol. Strip it and any
+                    # arguments so we end up with the decorator's name.
+                    text = _node_text(child, source).lstrip("@").strip().split("(")[0]
             decorators.append(text)
     return decorators
 
@@ -186,27 +202,23 @@ def _extract_rust(root: Node, source: str, file: Path) -> list[Symbol]:
     """
     Extract Rust functions, impl blocks, and struct definitions.
     Captures pub visibility and async markers.
+
+    Not implemented yet — placeholder so Python code can import this module.
     """
-    # TODO: implement
-    # Walk: function_item, impl_item, struct_item
-    # Check visibility_modifier for pub
-    # Track impl block for parent_class equivalent
     raise NotImplementedError
 
 
 def _extract_typescript(root: Node, source: str, file: Path) -> list[Symbol]:
     """
     Extract TypeScript/TSX functions, classes, and methods.
-    Handles arrow functions assigned to const declarations.
+
+    Not implemented yet — reserved for future TypeScript support.
     """
-    # TODO: implement
-    # Walk: function_declaration, method_definition, class_declaration
-    # Also: lexical_declaration -> arrow_function (const foo = () => ...)
     raise NotImplementedError
 
 
 def _extract_javascript(root: Node, source: str, file: Path) -> list[Symbol]:
-    """JavaScript extraction — delegates to TypeScript extractor (superset grammar)."""
+    """JavaScript extraction — reuses the TypeScript extractor."""
     return _extract_typescript(root, source, file)
 
 
