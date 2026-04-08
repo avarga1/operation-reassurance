@@ -1,7 +1,7 @@
 """
 Streamlit GUI dashboard.
 
-Run with: streamlit run reassure/gui/app.py -- --path ./my-repo
+Run with: make gui
 
 Sections:
   - Overview: health score, file/symbol counts, language breakdown
@@ -19,6 +19,70 @@ from reassure.analyzers.test_coverage import analyze_coverage
 from reassure.classifiers.test_type import classify_test_file
 from reassure.core.repo_walker import walk_repo
 
+_IGNORE = {
+    ".git",
+    ".venv",
+    "venv",
+    "node_modules",
+    "__pycache__",
+    ".dart_tool",
+    "build",
+    "dist",
+    "target",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+}
+
+
+def _file_explorer() -> Path | None:
+    """
+    Sidebar directory navigator.
+    Returns the selected Path when the user confirms, else None.
+    """
+    if "browser_path" not in st.session_state:
+        st.session_state.browser_path = Path.home()
+
+    current = Path(st.session_state.browser_path)
+
+    st.markdown(f"**📂 {current}**")
+
+    # Up button
+    if current.parent != current:
+        if st.button("⬆ Up", use_container_width=True):
+            st.session_state.browser_path = current.parent
+            st.rerun()
+
+    # List visible subdirectories
+    try:
+        subdirs = sorted(
+            [
+                d
+                for d in current.iterdir()
+                if d.is_dir() and d.name not in _IGNORE and not d.name.startswith(".")
+            ],
+            key=lambda d: d.name.lower(),
+        )
+    except PermissionError:
+        subdirs = []
+
+    if subdirs:
+        for d in subdirs:
+            if st.button(f"📁 {d.name}", key=str(d), use_container_width=True):
+                st.session_state.browser_path = d
+                st.rerun()
+    else:
+        st.caption("_(no subdirectories)_")
+
+    st.divider()
+
+    # Confirm selection
+    if st.button(f"✅ Select  `{current.name}`", type="primary", use_container_width=True):
+        st.session_state.selected_path = current
+        st.rerun()
+
+    return st.session_state.get("selected_path")
+
 
 def main() -> None:
     st.set_page_config(
@@ -31,22 +95,26 @@ def main() -> None:
     st.caption("Repo health observatory. CST/AST-powered, no runtime required.")
 
     with st.sidebar:
-        repo_path = st.text_input("Repository path", value=".")
+        root = _file_explorer()
         st.divider()
         run_coverage = st.checkbox("Test Coverage", value=True)
         run_observability = st.checkbox("Observability", value=True)
-        analyze = st.button("Analyze", type="primary", use_container_width=True)
+        analyze = st.button(
+            "Analyze" if root is None else f"Analyze `{root.name}`",
+            type="primary",
+            use_container_width=True,
+            disabled=root is None,
+        )
 
-    if not analyze:
-        st.info("Configure a repo path and hit **Analyze** to get started.")
+    if root is None or not analyze:
+        st.info("Browse to a repo in the sidebar and hit **Analyze**.")
         return
 
-    root = Path(repo_path).expanduser().resolve()
     if not root.is_dir():
         st.error(f"Path not found: `{root}`")
         return
 
-    with st.spinner("Walking repo…"):
+    with st.spinner(f"Walking `{root}` …"):
         index = walk_repo(root)
 
     # ── Overview ──────────────────────────────────────────────────────────────
