@@ -26,6 +26,7 @@ from tree_sitter import Node
 from reassure.core.parser import parse_file
 from reassure.core.repo_walker import RepoIndex
 from reassure.core.symbol_map import Symbol
+from reassure.plugin import AnalyzerResult
 
 # --------------------------------------------------------------------------- #
 # Default patterns — identifier prefixes that count as real observability
@@ -125,6 +126,36 @@ class ObservabilityReport:
 # --------------------------------------------------------------------------- #
 # Analyzer entry point
 # --------------------------------------------------------------------------- #
+
+
+class ObservabilityAnalyzer:
+    """Plugin-protocol wrapper for the observability analyzer."""
+
+    name = "observability"
+    description = "Finds public functions with no production logging, tracing, or error capture."
+
+    def analyze(self, index: RepoIndex) -> AnalyzerResult:
+        report = analyze_observability(index)
+        issues = [
+            {
+                "symbol": g.symbol.name,
+                "file": str(g.symbol.file),
+                "line": g.symbol.line_start,
+                "reason": g.reason,
+            }
+            for g in report.gaps
+        ]
+        return AnalyzerResult(
+            name=self.name,
+            summary=f"{round(100 - report.dark_pct, 1)}% instrumented — {report.dark_functions} dark functions, {len(report.dark_module_paths)} dark modules",
+            data=report,
+            issues=issues,
+        )
+
+    def render_terminal(self, result: AnalyzerResult, root: Path) -> None:
+        from reassure.output.terminal import render_observability
+
+        render_observability(result.data, root=root)
 
 
 def analyze_observability(

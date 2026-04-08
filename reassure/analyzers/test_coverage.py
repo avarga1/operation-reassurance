@@ -18,6 +18,7 @@ from reassure.classifiers.test_type import TestClassification, TestType
 from reassure.core.parser import parse_file
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.core.symbol_map import Symbol
+from reassure.plugin import AnalyzerResult
 
 
 @dataclass
@@ -69,6 +70,41 @@ class CoverageReport:
             if s.has_unit_tests
             and not any(k in s.tests_by_type for k in [TestType.INTEGRATION, TestType.E2E])
         ]
+
+
+class CoverageAnalyzer:
+    """Plugin-protocol wrapper for the test coverage analyzer."""
+
+    name = "coverage"
+    description = "Finds public symbols with no test coverage, grouped by test type."
+
+    def analyze(self, index: RepoIndex) -> AnalyzerResult:
+        from reassure.classifiers.test_type import classify_test_file
+
+        classifications = {
+            f.path: classify_test_file(f.path, list(f.imports), []) for f in index.test_files
+        }
+        report = analyze_coverage(index, classifications)
+        issues = [
+            {
+                "symbol": sc.symbol.name,
+                "file": str(sc.symbol.file),
+                "line": sc.symbol.line_start,
+                "reason": "no tests",
+            }
+            for sc in report.uncovered
+        ]
+        return AnalyzerResult(
+            name=self.name,
+            summary=f"{report.coverage_pct}% coverage — {len(report.uncovered)} uncovered symbols",
+            data=report,
+            issues=issues,
+        )
+
+    def render_terminal(self, result: AnalyzerResult, root: Path) -> None:
+        from reassure.output.terminal import render_coverage
+
+        render_coverage(result.data, root=root)
 
 
 def analyze_coverage(

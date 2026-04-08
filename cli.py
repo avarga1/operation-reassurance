@@ -6,7 +6,6 @@ Usage:
   reassure ./src --only coverage        # single analyzer
   reassure ./src --output json          # JSON to stdout
   reassure ./src --output json -o report.json
-  reassure ./src --config .reassure.toml
   streamlit run reassure/gui/app.py     # GUI dashboard
 """
 
@@ -18,7 +17,16 @@ from typing import Any
 import click
 from rich.console import Console
 
-ANALYZERS = ["coverage", "observability", "dead_code", "solid", "metrics"]
+from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.test_coverage import CoverageAnalyzer
+from reassure.plugin import Analyzer, load_analyzer
+
+BUILTIN_ANALYZERS: list[Analyzer] = [
+    CoverageAnalyzer(),
+    ObservabilityAnalyzer(),
+]
+ANALYZER_NAMES = [a.name for a in BUILTIN_ANALYZERS]
+
 console = Console()
 
 
@@ -26,7 +34,7 @@ console = Console()
 @click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option(
     "--only",
-    type=click.Choice(ANALYZERS),
+    type=click.Choice(ANALYZER_NAMES),
     multiple=True,
     help="Run only specific analyzers. Can be repeated.",
 )
@@ -62,13 +70,18 @@ def main(
     show_passed: bool,
 ) -> None:
     """Analyze repo health at PATH using static CST/AST analysis."""
-    from reassure.analyzers.observability import analyze_observability
-    from reassure.analyzers.test_coverage import analyze_coverage
-    from reassure.classifiers.test_type import classify_test_file
     from reassure.core.repo_walker import walk_repo
-    from reassure.output.terminal import render_coverage, render_observability
 
-    run = set(only) if only else {"coverage", "observability"}
+    # Load custom analyzers from config
+    analyzers = list(BUILTIN_ANALYZERS)
+    if config:
+        import toml
+
+        cfg = toml.load(config)
+        for dotted in cfg.get("analyzers", {}).get("custom", []):
+            analyzers.append(load_analyzer(dotted))
+
+    run_names = set(only) if only else {a.name for a in analyzers}
 
     with console.status(f"[bold cyan]Walking {path} …"):
         index = walk_repo(path)
@@ -81,31 +94,19 @@ def main(
 
     results: dict[str, Any] = {}
 
-    if "coverage" in run:
-        classifications = {
-            f.path: classify_test_file(f.path, list(f.imports), []) for f in index.test_files
-        }
-        report = analyze_coverage(index, classifications)
+    for analyzer in analyzers:
+        if analyzer.name not in run_names:
+            continue
+
+        with console.status(f"[cyan]Running {analyzer.name} …"):
+            result = analyzer.analyze(index)
 
         if output == "terminal":
-            render_coverage(report, show_passed=show_passed, root=path)
+            analyzer.render_terminal(result, root=path)
         else:
-            results["coverage"] = _coverage_to_dict(report)
-
-    if "observability" in run:
-        obs_report = analyze_observability(index)
-        if output == "terminal":
-            render_observability(obs_report, root=path)
-        else:
-            results["observability"] = {
-                "dark_pct": obs_report.dark_pct,
-                "dark_functions": obs_report.dark_functions,
-                "total_functions": obs_report.total_functions,
-                "dark_modules": [str(p) for p in obs_report.dark_module_paths],
-                "gaps": [
-                    {"name": g.symbol.name, "file": str(g.symbol.file), "line": g.symbol.line_start}
-                    for g in obs_report.gaps
-                ],
+            results[analyzer.name] = {
+                "summary": result.summary,
+                "issues": result.issues,
             }
 
     if output == "json" or out:
@@ -115,23 +116,6 @@ def main(
             console.print(f"[green]Written to {out}[/green]")
         else:
             sys.stdout.write(payload + "\n")
-
-
-def _coverage_to_dict(report: "CoverageReport") -> dict[str, Any]:  # noqa: F821
-    return {
-        "coverage_pct": report.coverage_pct,
-        "total_symbols": report.total_symbols,
-        "covered_symbols": report.covered_symbols,
-        "uncovered": [
-            {
-                "name": sc.symbol.name,
-                "kind": sc.symbol.kind,
-                "file": str(sc.symbol.file),
-                "line_start": sc.symbol.line_start,
-            }
-            for sc in report.uncovered
-        ],
-    }
 
 
 if __name__ == "__main__":
