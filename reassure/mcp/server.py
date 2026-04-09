@@ -27,6 +27,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.core.repo_walker import walk_repo
 from reassure.plugin import Analyzer
@@ -43,6 +44,7 @@ mcp = FastMCP(
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    SolidAnalyzer(),
 ]
 
 

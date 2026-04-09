@@ -18,12 +18,14 @@ import click
 from rich.console import Console
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.plugin import Analyzer, load_analyzer
 
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    SolidAnalyzer(),
 ]
 ANALYZER_NAMES = [a.name for a in BUILTIN_ANALYZERS]
 
