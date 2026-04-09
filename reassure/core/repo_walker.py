@@ -117,6 +117,7 @@ def walk_repo(
             symbols=symbols,
             loc=loc,
             is_test=is_test_file(path, root),
+            source=source,
         )
         index.files.append(record)
 
