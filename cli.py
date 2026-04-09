@@ -17,6 +17,7 @@ from typing import Any
 import click
 from rich.console import Console
 
+from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
@@ -26,6 +27,7 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
     SolidAnalyzer(),
+    BlastRadiusAnalyzer(),
 ]
 ANALYZER_NAMES = [a.name for a in BUILTIN_ANALYZERS]
 
@@ -62,6 +64,9 @@ console = Console()
     help="Path to .reassure.toml config file.",
 )
 @click.option("--show-passed", is_flag=True, default=False, help="Show covered symbols too.")
+@click.option(
+    "--base", default="main", show_default=True, help="Git base ref for blast_radius diff."
+)
 @click.version_option()
 def main(
     path: Path,
@@ -70,12 +75,16 @@ def main(
     out: Path | None,
     config: Path | None,
     show_passed: bool,
+    base: str,
 ) -> None:
     """Analyze repo health at PATH using static CST/AST analysis."""
     from reassure.core.repo_walker import walk_repo
 
-    # Load custom analyzers from config
-    analyzers = list(BUILTIN_ANALYZERS)
+    # Inject base ref into blast_radius analyzer
+    analyzers = [
+        BlastRadiusAnalyzer(base=base) if isinstance(a, BlastRadiusAnalyzer) else a
+        for a in BUILTIN_ANALYZERS
+    ]
     if config:
         import toml
 

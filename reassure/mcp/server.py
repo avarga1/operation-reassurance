@@ -26,6 +26,12 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from reassure.analyzers.blast_radius import (
+    BlastRadiusAnalyzer,
+    analyze_blast_radius,
+    get_diff,
+    parse_diff,
+)
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
@@ -45,6 +51,7 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
     SolidAnalyzer(),
+    BlastRadiusAnalyzer(),
 ]
 
 
@@ -136,6 +143,72 @@ def get_uncovered_symbols(path: str) -> dict:
     return {
         "summary": result.summary,
         "uncovered": result.issues,
+    }
+
+
+@mcp.tool(
+    name="get_blast_radius",
+    description=(
+        "Given a repo path and a git base ref, returns which symbols changed, "
+        "who calls them, and which callers have no test coverage. "
+        "The uncovered_callers list is the dangerous part — those will regress silently."
+    ),
+)
+def get_blast_radius(path: str, base: str = "main", transitive_depth: int = 2) -> dict:
+    root = Path(path).expanduser().resolve()
+    if not root.is_dir():
+        return {"error": f"Not a directory: {path}"}
+    try:
+        diff_text = get_diff(root, base)
+    except Exception as e:
+        return {"error": str(e)}
+    if not diff_text.strip():
+        return {"summary": f"No changes vs {base}", "affected_symbols": [], "uncovered_callers": []}
+
+    index = walk_repo(root)
+    diff_hunks = parse_diff(diff_text, root)
+    report = analyze_blast_radius(index, diff_hunks, base=base, transitive_depth=transitive_depth)
+
+    return {
+        "summary": (
+            f"{len(report.affected_symbols)} symbols changed, "
+            f"{report.total_callers} callers, "
+            f"{report.total_uncovered_callers} uncovered"
+        ),
+        "affected_symbols": [
+            {
+                "symbol": a.symbol.name,
+                "file": str(a.symbol.file.relative_to(root)),
+                "line_start": a.symbol.line_start,
+                "line_end": a.symbol.line_end,
+                "direct_callers": [
+                    {
+                        "name": c.symbol.name,
+                        "file": str(c.file.relative_to(root)),
+                        "covered": c.is_covered,
+                    }
+                    for c in a.direct_callers
+                ],
+                "transitive_callers": [
+                    {
+                        "name": c.symbol.name,
+                        "file": str(c.file.relative_to(root)),
+                        "covered": c.is_covered,
+                    }
+                    for c in a.transitive_callers
+                ],
+            }
+            for a in report.affected_symbols
+        ],
+        "uncovered_callers": [
+            {
+                "changed_symbol": a.symbol.name,
+                "caller": c.symbol.name,
+                "caller_file": str(c.file.relative_to(root)),
+            }
+            for a in report.affected_symbols
+            for c in a.uncovered_callers
+        ],
     }
 
 
