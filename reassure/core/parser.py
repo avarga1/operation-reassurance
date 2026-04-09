@@ -9,12 +9,18 @@ Responsible for:
 
 from pathlib import Path
 
-import tree_sitter_dart
 import tree_sitter_javascript
 import tree_sitter_python
 import tree_sitter_rust
 import tree_sitter_typescript
 from tree_sitter import Language, Parser, Tree
+
+try:
+    import tree_sitter_dart as _ts_dart
+
+    _DART_LANGUAGE = _ts_dart.language()
+except ImportError:
+    _DART_LANGUAGE = None
 
 EXTENSION_MAP: dict[str, str] = {
     ".py": "python",
@@ -37,14 +43,14 @@ def get_language(lang: str) -> Language | None:
     if lang in _LANGUAGE_CACHE:
         return _LANGUAGE_CACHE[lang]
 
-    # TODO: add dart, glsl when needed
-    grammar_map = {
+    grammar_map: dict[str, object] = {
         "python": tree_sitter_python.language(),
         "rust": tree_sitter_rust.language(),
         "javascript": tree_sitter_javascript.language(),
         "typescript": tree_sitter_typescript.language_typescript(),
-        "dart": tree_sitter_dart.language(),
     }
+    if _DART_LANGUAGE is not None:
+        grammar_map["dart"] = _DART_LANGUAGE
 
     if lang not in grammar_map:
         return None
