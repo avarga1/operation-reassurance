@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../layout/breakpoints.dart';
+
+/// BuildContext extensions — eliminates Theme.of(context) boilerplate.
+///
+/// Usage:
+///   context.colorScheme.primary          ✓
+///   Theme.of(context).colorScheme.primary   ✗  (verbose, triggers lint)
+///
+///   context.textTheme.bodyMedium         ✓
+///   Theme.of(context).textTheme.bodyMedium  ✗
+///
+///   context.router.push('/home')         ✓
+///   Navigator.of(context).push(…)        ✗  (triggers no-imperative-navigation)
+extension BuildContextX on BuildContext {
+  // ── theme ──────────────────────────────────────────────────────────────────
+  ThemeData   get theme       => Theme.of(this);
+  ColorScheme get colorScheme => Theme.of(this).colorScheme;
+  TextTheme   get textTheme   => Theme.of(this).textTheme;
+
+  // ── layout ─────────────────────────────────────────────────────────────────
+  Size   get screenSize   => MediaQuery.sizeOf(this);
+  double get screenWidth  => MediaQuery.sizeOf(this).width;
+  double get screenHeight => MediaQuery.sizeOf(this).height;
+
+  bool get isCompact  => screenWidth < Breakpoints.compact;
+  bool get isMedium   => screenWidth >= Breakpoints.compact && screenWidth < Breakpoints.medium;
+  bool get isExpanded => screenWidth >= Breakpoints.medium;
+
+  EdgeInsets get viewInsets => MediaQuery.viewInsetsOf(this);
+  EdgeInsets get padding    => MediaQuery.paddingOf(this);
+
+  // ── navigation ─────────────────────────────────────────────────────────────
+  /// Use this instead of Navigator.of(context).
+  GoRouter get router => GoRouter.of(this);
+}

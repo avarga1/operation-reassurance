@@ -206,7 +206,21 @@ PRESETS: dict[str, list[RepoRule]] = {
             pattern="lib/**/*.dart",
             forbidden_content=["SizedBox(height:", "SizedBox(width:"],
             severity="warning",
-            message="Use theme spacing tokens instead of hardcoded SizedBox dimensions.",
+            message="Use AppSpacing.hMd / AppSpacing.wSm etc. instead of hardcoded SizedBox dimensions.",
+        ),
+        RepoRule(
+            name="no-theme-of-context",
+            pattern="lib/**/*.dart",
+            forbidden_content=["Theme.of(context)"],
+            severity="warning",
+            message="Use context.colorScheme / context.textTheme from core/extensions/context_x.dart instead.",
+        ),
+        RepoRule(
+            name="no-raw-duration",
+            pattern="lib/**/*.dart",
+            forbidden_content=["Duration(milliseconds:", "Duration(seconds:", "Duration(minutes:"],
+            severity="warning",
+            message="Use AppDurations.medium2 etc. instead of hardcoded Duration literals.",
         ),
     ],
     "python": [

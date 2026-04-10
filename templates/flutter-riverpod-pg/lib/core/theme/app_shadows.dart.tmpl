@@ -1,0 +1,43 @@
+import 'package:flutter/material.dart';
+
+/// Material Design 3 elevation shadow tokens.
+///
+/// MD3 uses 5 elevation levels (0–4). Each level uses two shadows:
+/// an umbra (key light, darker) and a penumbra (ambient, softer).
+/// Values match the MD3 spec exactly.
+/// https://m3.material.io/styles/elevation/tokens
+///
+/// Usage:
+///   decoration: BoxDecoration(boxShadow: AppShadows.level2)    ✓
+///   elevation: 2                                               ✓ (on Material widgets)
+abstract final class AppShadows {
+  static const Color _umbra     = Color(0x33000000); // 20% black
+  static const Color _penumbra  = Color(0x1F000000); // 12% black
+  static const Color _ambient   = Color(0x1A000000); // 10% black
+
+  static const List<BoxShadow> level0 = [];
+
+  static const List<BoxShadow> level1 = [
+    BoxShadow(color: _umbra,    blurRadius: 2,  offset: Offset(0, 1)),
+    BoxShadow(color: _penumbra, blurRadius: 1,  offset: Offset(0, 1)),
+    BoxShadow(color: _ambient,  blurRadius: 1,  offset: Offset(0, 0)),
+  ];
+
+  static const List<BoxShadow> level2 = [
+    BoxShadow(color: _umbra,    blurRadius: 4,  offset: Offset(0, 1)),
+    BoxShadow(color: _penumbra, blurRadius: 2,  offset: Offset(0, 2)),
+    BoxShadow(color: _ambient,  blurRadius: 1,  offset: Offset(0, 0)),
+  ];
+
+  static const List<BoxShadow> level3 = [
+    BoxShadow(color: _umbra,    blurRadius: 8,  offset: Offset(0, 2)),
+    BoxShadow(color: _penumbra, blurRadius: 4,  offset: Offset(0, 4)),
+    BoxShadow(color: _ambient,  blurRadius: 3,  offset: Offset(0, 0)),
+  ];
+
+  static const List<BoxShadow> level4 = [
+    BoxShadow(color: _umbra,    blurRadius: 12, offset: Offset(0, 4)),
+    BoxShadow(color: _penumbra, blurRadius: 6,  offset: Offset(0, 8)),
+    BoxShadow(color: _ambient,  blurRadius: 4,  offset: Offset(0, 0)),
+  ];
+}

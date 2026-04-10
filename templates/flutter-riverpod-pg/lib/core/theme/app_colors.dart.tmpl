@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+
+/// Seed color for the app's tonal palette.
+///
+/// Flutter's [ColorScheme.fromSeed] implements the Material 3 / Oklch tonal
+/// palette algorithm: one seed generates all primary, secondary, tertiary,
+/// error, neutral, and neutral-variant ramps — light and dark.
+///
+/// To change the entire app palette: update [defaultSeed] only.
+/// Never hardcode Color(0xFF…) outside this file.
+abstract final class AppColors {
+  /// Change this single value to re-theme the entire app.
+  static const Color defaultSeed = Color(0xFF6750A4); // MD3 baseline purple
+
+  static ColorScheme light({Color seed = defaultSeed}) =>
+      ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.light);
+
+  static ColorScheme dark({Color seed = defaultSeed}) =>
+      ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark);
+}

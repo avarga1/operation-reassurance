@@ -1,0 +1,41 @@
+import 'package:flutter/material.dart';
+
+/// Material Design 3 shape scale.
+///
+/// Border radius values are proportional to the component they wrap.
+/// Small components (chips, badges) use xs/sm; cards use md/lg;
+/// dialogs and sheets use lg/xl; pills use full.
+/// https://m3.material.io/styles/shape/shape-scale-tokens
+///
+/// Usage:
+///   borderRadius: AppRadii.mdAll                 ✓
+///   borderRadius: BorderRadius.circular(12)      ✗  (triggers no-raw-border-radius)
+abstract final class AppRadii {
+  // ── scale (dp) ────────────────────────────────────────────────────────────
+  static const double none = 0;
+  static const double xs   = 4;   // chips, small badges
+  static const double sm   = 8;   // text fields, small cards
+  static const double md   = 12;  // cards, dialogs
+  static const double lg   = 16;  // large cards, nav drawers
+  static const double xl   = 28;  // FABs, large components
+  static const double full = 999; // pills, circular buttons
+
+  // ── BorderRadius shortcuts ────────────────────────────────────────────────
+  static const BorderRadius xsAll   = BorderRadius.all(Radius.circular(xs));
+  static const BorderRadius smAll   = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius mdAll   = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius lgAll   = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius xlAll   = BorderRadius.all(Radius.circular(xl));
+  static const BorderRadius fullAll = BorderRadius.all(Radius.circular(full));
+
+  // ── top-only (bottom sheets, banners) ────────────────────────────────────
+  static const BorderRadius mdTop = BorderRadius.only(
+    topLeft: Radius.circular(md), topRight: Radius.circular(md),
+  );
+  static const BorderRadius lgTop = BorderRadius.only(
+    topLeft: Radius.circular(lg), topRight: Radius.circular(lg),
+  );
+  static const BorderRadius xlTop = BorderRadius.only(
+    topLeft: Radius.circular(xl), topRight: Radius.circular(xl),
+  );
+}
