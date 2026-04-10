@@ -327,6 +327,76 @@ class TestFlutterStyleRules:
         )
         assert any(v.rule.name == "no-raw-edge-insets" for v in violations)
 
+    def test_hardcoded_color_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/chip.dart"),
+            "color: Colors.blue,\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-hardcoded-colors" for v in violations)
+
+    def test_hex_color_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/chip.dart"),
+            "color: Color(0xFF3B82F6),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-hardcoded-colors" for v in violations)
+
+    def test_inline_text_style_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/label.dart"),
+            "style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-inline-text-style" for v in violations)
+
+    def test_imperative_navigation_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/features/auth/presentation/login_screen.dart"),
+            "Navigator.of(context).push(MaterialPageRoute(builder: (_) => HomeScreen()));\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-imperative-navigation" for v in violations)
+
+    def test_media_query_size_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/layout.dart"),
+            "final size = MediaQuery.of(context).size;\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-media-query-size" for v in violations)
+
+    def test_future_delayed_zero_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/features/home/presentation/home_screen.dart"),
+            "await Future.delayed(Duration.zero);\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-future-delayed-zero" for v in violations)
+
+    def test_raw_sized_box_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/spacing.dart"),
+            "SizedBox(height: 16),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-raw-sized-box-spacing" for v in violations)
+
     def test_style_rules_are_warnings_not_errors(self):
         rules = PRESETS["flutter"]
         style_rule_names = {
@@ -334,6 +404,13 @@ class TestFlutterStyleRules:
             "no-inline-opacity",
             "no-raw-border-radius",
             "no-raw-edge-insets",
+            "no-hardcoded-colors",
+            "no-inline-text-style",
+            "no-imperative-navigation",
+            "no-media-query-size",
+            "no-null-bang",
+            "no-future-delayed-zero",
+            "no-raw-sized-box-spacing",
         }
         for rule in rules:
             if rule.name in style_rule_names:
