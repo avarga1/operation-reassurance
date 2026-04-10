@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "operation-reassurance"
-version = "0.1.0"
+version = "0.5.0"
 description = "Repo health observatory. CST/AST-powered, no runtime required."
 authors = ["Austin Varga <64624232+avarga1@users.noreply.github.com>"]
 license = "MIT"
