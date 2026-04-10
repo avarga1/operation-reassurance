@@ -26,6 +26,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from reassure.analyzers.folder_structure import FolderStructureAnalyzer, check_new_file as check_new_folder_file, _detect_default_rules as _detect_folder_rules, _rules_from_toml as _folder_rules_from_toml
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.taxonomy import TaxonomyAnalyzer, check_file, _detect_default_rules, _rules_from_toml
 from reassure.analyzers.test_coverage import CoverageAnalyzer
@@ -45,6 +46,7 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
     TaxonomyAnalyzer(),
+    FolderStructureAnalyzer(),
 ]
 
 
@@ -177,6 +179,50 @@ def check_taxonomy(path: str, proposed_content: str) -> dict:
                 "file": str(v.file),
                 "rule_pattern": v.rule.pattern,
                 "purpose": v.rule.purpose,
+                "reasons": v.reasons,
+                "message": v.rule.message,
+            }
+            for v in violations
+        ],
+    }
+
+
+@mcp.tool(
+    name="check_folder_structure",
+    description=(
+        "Check whether writing a file to a given path would violate folder structure rules. "
+        "Call this BEFORE creating a new file to ensure you're placing it in the right layer. "
+        "Returns violations with guidance on where the file should go instead."
+    ),
+)
+def check_folder_structure(path: str) -> dict:
+    """path — absolute path of the file you are about to create."""
+    file_path = Path(path).expanduser().resolve()
+    root = _find_repo_root(file_path)
+
+    toml_path = root / ".reassure.toml" if root else None
+    if toml_path and toml_path.exists():
+        rules = _folder_rules_from_toml(toml_path)
+    elif root:
+        rules = _detect_folder_rules(root)
+    else:
+        rules = _detect_folder_rules(file_path.parent)
+
+    if not rules:
+        return {"blocked": False, "violations": [], "note": "No folder rules detected for this repo."}
+
+    target_root = root or file_path.parent
+    violations = check_new_folder_file(file_path, target_root, rules)
+
+    if not violations:
+        return {"blocked": False, "violations": []}
+
+    return {
+        "blocked": True,
+        "violations": [
+            {
+                "folder": str(v.folder),
+                "rule_pattern": v.rule.pattern,
                 "reasons": v.reasons,
                 "message": v.rule.message,
             }

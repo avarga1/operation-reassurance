@@ -13,6 +13,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from reassure.analyzers.folder_structure import FolderStructureReport
 from reassure.analyzers.observability import ObservabilityReport
 from reassure.analyzers.taxonomy import TaxonomyReport
 from reassure.analyzers.test_coverage import CoverageReport
@@ -198,6 +199,52 @@ def render_taxonomy(report: TaxonomyReport, root: Path | None = None) -> None:
         table.add_row(
             str(file_display),
             f"[dim]{v.rule.pattern}[/dim]\n[italic]{v.rule.purpose}[/italic]",
+            "\n".join(f"[red]✗[/red] {r}" for r in v.reasons),
+        )
+        if v.rule.message:
+            table.add_row("", "", f"[yellow italic]{v.rule.message}[/yellow italic]")
+
+    console.print(Panel(table, title=str(title)))
+
+
+def render_folder_structure(report: FolderStructureReport, root: Path | None = None) -> None:
+    """Render folder structure violation report."""
+    title = Text()
+    title.append("Folder Structure  ")
+    if report.violations:
+        title.append(f"{len(report.violations)} violations", style="bold red")
+    else:
+        title.append("clean", style="bold green")
+    title.append(
+        f"  ({report.folders_checked} folders checked, {report.rules_applied} rules)",
+        style="dim",
+    )
+
+    if not report.violations:
+        console.print(Panel(
+            Text("All folders within structure rules ✓", style="bold green"),
+            title=str(title),
+        ))
+        return
+
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        border_style="dim",
+        expand=True,
+    )
+    table.add_column("Folder", style="bold red", min_width=30, no_wrap=True)
+    table.add_column("Rule", style="dim", no_wrap=True)
+    table.add_column("Violations", no_wrap=False)
+
+    for v in sorted(report.violations, key=lambda x: str(x.folder)):
+        try:
+            folder_display = v.folder.relative_to(root) if root else v.folder
+        except ValueError:
+            folder_display = v.folder
+        table.add_row(
+            str(folder_display) + "/",
+            f"[dim]{v.rule.pattern}[/dim]",
             "\n".join(f"[red]✗[/red] {r}" for r in v.reasons),
         )
         if v.rule.message:

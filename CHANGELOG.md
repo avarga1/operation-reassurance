@@ -13,7 +13,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Plugin protocol — extensible analyzer interface (#8)
 - Next.js + shadcn/ui frontend — replace Streamlit (#9)
 - Python symbol extractor tests (#1) — contributor: @poojakaskare
-- Folder structure analyzer — feature-first layout enforcement (#36)
+
+---
+
+## [0.5.0] — 2026-04-10
+
+### Added
+- **FolderStructureAnalyzer** (`reassure/analyzers/folder_structure.py`) — enforces feature-first layout
+  - `max_files = 0` flags flat file dumps (`lib/pages/` with 25 files → blocked)
+  - `max_files = N` flags layers that grew too large (`presentation/` capped at 12)
+  - `required_children` flags feature folders missing required layers (`data/`, `domain/`, `presentation/`)
+  - Built-in default rulesets for Flutter/Riverpod, Flutter/BLoC, FastAPI, Axum
+  - Auto-detects stack by walking up the directory tree (same as TaxonomyAnalyzer)
+  - `check_new_file()` — PreToolUse path: given a proposed file path, checks if writing it violates a folder rule
+  - 25 unit tests covering pattern matching, flat dump detection, required children, file limits, PreToolUse path
+- **`check_folder_structure` MCP tool** — call before creating any new file; returns `{blocked, violations}` with guidance on where the file should go
+- **`render_folder_structure` terminal renderer** — Rich table with folder, rule, reasons, guidance message
+- Wired into CLI (`reassure analyse . --only folder_structure`) and MCP server
+- Closes #37
 
 ---
 

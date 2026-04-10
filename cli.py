@@ -20,6 +20,7 @@ from typing import Any
 import click
 from rich.console import Console
 
+from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.taxonomy import TaxonomyAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
@@ -29,6 +30,7 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
     TaxonomyAnalyzer(),
+    FolderStructureAnalyzer(),
 ]
 ANALYZER_NAMES = [a.name for a in BUILTIN_ANALYZERS]
 
