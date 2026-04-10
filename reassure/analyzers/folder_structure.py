@@ -19,9 +19,10 @@ Three checks per rule:
 from __future__ import annotations
 
 import fnmatch
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import tomllib
 
 from reassure.core.repo_walker import RepoIndex
 from reassure.plugin import AnalyzerResult
@@ -29,17 +30,17 @@ from reassure.plugin import AnalyzerResult
 
 @dataclass
 class FolderRule:
-    pattern: str                              # glob matched against path relative to repo root
-    max_files: int | None = None              # None = no limit; 0 = folder should not hold loose files
+    pattern: str  # glob matched against path relative to repo root
+    max_files: int | None = None  # None = no limit; 0 = folder should not hold loose files
     required_children: list[str] = field(default_factory=list)
     message: str = ""
 
 
 @dataclass
 class FolderViolation:
-    folder: Path                              # absolute path of the offending folder
+    folder: Path  # absolute path of the offending folder
     rule: FolderRule
-    reasons: list[str]                        # ["22 files (max 0)", "missing: domain/"]
+    reasons: list[str]  # ["22 files (max 0)", "missing: domain/"]
 
 
 @dataclass
@@ -60,8 +61,7 @@ _FLUTTER_RIVERPOD_FOLDER_RULES: list[FolderRule] = [
         pattern="lib/pages",
         max_files=0,
         message=(
-            "Flat lib/pages/ dump detected. "
-            "Organize by feature: lib/features/<name>/presentation/."
+            "Flat lib/pages/ dump detected. Organize by feature: lib/features/<name>/presentation/."
         ),
     ),
     FolderRule(
@@ -162,13 +162,14 @@ _AXUM_FOLDER_RULES: list[FolderRule] = [
 
 _DEFAULT_RULESETS: dict[str, list[FolderRule]] = {
     "flutter-riverpod": _FLUTTER_RIVERPOD_FOLDER_RULES,
-    "flutter-bloc":     _FLUTTER_BLOC_FOLDER_RULES,
-    "fastapi":          _FASTAPI_FOLDER_RULES,
-    "axum":             _AXUM_FOLDER_RULES,
+    "flutter-bloc": _FLUTTER_BLOC_FOLDER_RULES,
+    "fastapi": _FASTAPI_FOLDER_RULES,
+    "axum": _AXUM_FOLDER_RULES,
 }
 
 
 # ── analyzer ──────────────────────────────────────────────────────────────────
+
 
 class FolderStructureAnalyzer:
     name = "folder_structure"
@@ -208,6 +209,7 @@ class FolderStructureAnalyzer:
 
     def render_terminal(self, result: AnalyzerResult, root: Path) -> None:
         from reassure.output.terminal import render_folder_structure
+
         render_folder_structure(result.data, root=root)
 
     def _load_rules(self, root: Path) -> list[FolderRule]:
@@ -218,6 +220,7 @@ class FolderStructureAnalyzer:
 
 
 # ── core logic ────────────────────────────────────────────────────────────────
+
 
 def analyze_folder_structure(root: Path, rules: list[FolderRule]) -> FolderStructureReport:
     """
@@ -239,11 +242,13 @@ def analyze_folder_structure(root: Path, rules: list[FolderRule]) -> FolderStruc
         for rule in matching:
             reasons = _check_folder_rule(folder, rule, source_files, children)
             if reasons:
-                report.violations.append(FolderViolation(
-                    folder=folder,
-                    rule=rule,
-                    reasons=reasons,
-                ))
+                report.violations.append(
+                    FolderViolation(
+                        folder=folder,
+                        rule=rule,
+                        reasons=reasons,
+                    )
+                )
 
     report.folders_checked = len(checked)
     return report
@@ -268,7 +273,7 @@ def check_new_file(
     source_files = _direct_source_files(folder)
     source_files_after = source_files + 1  # the proposed addition
 
-    children = _direct_subdirs(folder)
+    _direct_subdirs(folder)  # reserved for required_children check
     violations = []
 
     for rule in matching:
@@ -310,10 +315,7 @@ def _walk_dirs(root: Path):
 def _direct_source_files(folder: Path) -> int:
     """Count direct (non-recursive) source files in a folder."""
     try:
-        return sum(
-            1 for f in folder.iterdir()
-            if f.is_file() and f.suffix in _SOURCE_EXTENSIONS
-        )
+        return sum(1 for f in folder.iterdir() if f.is_file() and f.suffix in _SOURCE_EXTENSIONS)
     except PermissionError:
         return 0
 
@@ -341,9 +343,7 @@ def _check_folder_rule(
                 f"(should be organized into subdirectories)"
             )
         elif rule.max_files > 0 and source_file_count > rule.max_files:
-            reasons.append(
-                f"{source_file_count} files exceeds limit of {rule.max_files}"
-            )
+            reasons.append(f"{source_file_count} files exceeds limit of {rule.max_files}")
 
     for required in rule.required_children:
         if required not in children:
@@ -373,7 +373,7 @@ def _matches_folder_pattern(rel: str, pattern: str) -> bool:
     if len(rel_parts) != len(pat_parts):
         return False
 
-    return all(fnmatch.fnmatch(r, p) for r, p in zip(rel_parts, pat_parts))
+    return all(fnmatch.fnmatch(r, p) for r, p in zip(rel_parts, pat_parts, strict=False))
 
 
 def _rel(path: Path, root: Path) -> str:
@@ -384,6 +384,7 @@ def _rel(path: Path, root: Path) -> str:
 
 
 # ── config loading ────────────────────────────────────────────────────────────
+
 
 def _rules_from_toml(path: Path) -> list[FolderRule]:
     try:
@@ -398,12 +399,14 @@ def _rules_from_toml(path: Path) -> list[FolderRule]:
     for r in raw:
         if "pattern" not in r:
             continue
-        result.append(FolderRule(
-            pattern=r["pattern"],
-            max_files=r.get("max_files"),
-            required_children=r.get("required_children", []),
-            message=r.get("message", ""),
-        ))
+        result.append(
+            FolderRule(
+                pattern=r["pattern"],
+                max_files=r.get("max_files"),
+                required_children=r.get("required_children", []),
+                message=r.get("message", ""),
+            )
+        )
 
     if not result:
         # Fall back to defaults based on declared stack

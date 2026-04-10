@@ -26,9 +26,17 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from reassure.analyzers.folder_structure import FolderStructureAnalyzer, check_new_file as check_new_folder_file, _detect_default_rules as _detect_folder_rules, _rules_from_toml as _folder_rules_from_toml
+from reassure.analyzers.folder_structure import FolderStructureAnalyzer
+from reassure.analyzers.folder_structure import _detect_default_rules as _detect_folder_rules
+from reassure.analyzers.folder_structure import _rules_from_toml as _folder_rules_from_toml
+from reassure.analyzers.folder_structure import check_new_file as check_new_folder_file
 from reassure.analyzers.observability import ObservabilityAnalyzer
-from reassure.analyzers.taxonomy import TaxonomyAnalyzer, check_file, _detect_default_rules, _rules_from_toml
+from reassure.analyzers.taxonomy import (
+    TaxonomyAnalyzer,
+    _detect_default_rules,
+    _rules_from_toml,
+    check_file,
+)
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.core.repo_walker import walk_repo
 from reassure.plugin import Analyzer
@@ -209,7 +217,11 @@ def check_folder_structure(path: str) -> dict:
         rules = _detect_folder_rules(file_path.parent)
 
     if not rules:
-        return {"blocked": False, "violations": [], "note": "No folder rules detected for this repo."}
+        return {
+            "blocked": False,
+            "violations": [],
+            "note": "No folder rules detected for this repo.",
+        }
 
     target_root = root or file_path.parent
     violations = check_new_folder_file(file_path, target_root, rules)

@@ -181,7 +181,9 @@ def render_taxonomy(report: TaxonomyReport, root: Path | None = None) -> None:
     )
 
     if not report.violations:
-        console.print(Panel(Text("All files within taxonomy rules ✓", style="bold green"), title=str(title)))
+        console.print(
+            Panel(Text("All files within taxonomy rules ✓", style="bold green"), title=str(title))
+        )
         return
 
     table = Table(
@@ -221,10 +223,12 @@ def render_folder_structure(report: FolderStructureReport, root: Path | None = N
     )
 
     if not report.violations:
-        console.print(Panel(
-            Text("All folders within structure rules ✓", style="bold green"),
-            title=str(title),
-        ))
+        console.print(
+            Panel(
+                Text("All folders within structure rules ✓", style="bold green"),
+                title=str(title),
+            )
+        )
         return
 
     table = Table(

@@ -188,50 +188,54 @@ def _extract_rust(root: Node, source: str, file: Path) -> list[Symbol]:
     Captures pub visibility and async markers.
     """
     symbols: list[Symbol] = []
-    cursor = root.walk()
+    # cursor = root.walk()  # reserved
 
     def walk(node: Node, current_impl: str | None = None) -> None:
         if node.type == "impl_item":
             # impl TypeName { ... }
             type_node = node.child_by_field_name("type")
-            impl_name = source[type_node.start_byte:type_node.end_byte] if type_node else None
+            impl_name = source[type_node.start_byte : type_node.end_byte] if type_node else None
             for child in node.children:
                 walk(child, impl_name)
             return
 
         if node.type == "function_item":
             vis = node.child_by_field_name("visibility")
-            is_pub = vis is not None and source[vis.start_byte:vis.end_byte].startswith("pub")
+            is_pub = vis is not None and source[vis.start_byte : vis.end_byte].startswith("pub")
             name_node = node.child_by_field_name("name")
             if name_node:
-                name = source[name_node.start_byte:name_node.end_byte]
+                name = source[name_node.start_byte : name_node.end_byte]
                 kind = "method" if current_impl else "function"
-                symbols.append(Symbol(
-                    name=name,
-                    kind=kind,
-                    file=file,
-                    line_start=node.start_point[0] + 1,
-                    line_end=node.end_point[0] + 1,
-                    lang="rust",
-                    parent_class=current_impl,
-                    is_public=is_pub,
-                ))
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind=kind,
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="rust",
+                        parent_class=current_impl,
+                        is_public=is_pub,
+                    )
+                )
             return
 
         if node.type in ("struct_item", "enum_item"):
             name_node = node.child_by_field_name("name")
             if name_node:
-                name = source[name_node.start_byte:name_node.end_byte]
-                symbols.append(Symbol(
-                    name=name,
-                    kind="class",
-                    file=file,
-                    line_start=node.start_point[0] + 1,
-                    line_end=node.end_point[0] + 1,
-                    lang="rust",
-                    parent_class=None,
-                    is_public=True,
-                ))
+                name = source[name_node.start_byte : name_node.end_byte]
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind="class",
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="rust",
+                        parent_class=None,
+                        is_public=True,
+                    )
+                )
             return
 
         for child in node.children:

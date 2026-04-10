@@ -8,7 +8,6 @@ in both file contents and file/directory names.
 from __future__ import annotations
 
 import re
-import shutil
 from pathlib import Path
 
 from reassure.init.detector import StackProfile
@@ -31,8 +30,7 @@ def scaffold(
     """
     template_dir = TEMPLATES_DIR / template_key
     if not template_dir.exists():
-        raise ValueError(f"No template found for '{template_key}'. "
-                         f"Available: {list_templates()}")
+        raise ValueError(f"No template found for '{template_key}'. Available: {list_templates()}")
 
     if target.exists() and not overwrite:
         raise FileExistsError(f"{target} already exists. Pass overwrite=True to replace.")
@@ -83,12 +81,12 @@ def list_templates() -> list[str]:
     if not TEMPLATES_DIR.exists():
         return []
     return [
-        d.name for d in sorted(TEMPLATES_DIR.iterdir())
-        if d.is_dir() and not d.name.startswith("_")
+        d.name for d in sorted(TEMPLATES_DIR.iterdir()) if d.is_dir() and not d.name.startswith("_")
     ]
 
 
 # ── internals ────────────────────────────────────────────────────────────────
+
 
 def _build_context(project_name: str, template_key: str) -> dict[str, str]:
     return {

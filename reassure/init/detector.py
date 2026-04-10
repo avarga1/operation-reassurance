@@ -20,14 +20,14 @@ class StackProfile:
     """Detected technology stack for a repository."""
 
     # Frontend
-    frontend: str | None = None          # "flutter", "nextjs", "react"
+    frontend: str | None = None  # "flutter", "nextjs", "react"
     state_management: str | None = None  # "riverpod", "bloc", "zustand", "jotai"
 
     # Backend
-    backend: str | None = None           # "fastapi", "axum", "trpc", "none"
+    backend: str | None = None  # "fastapi", "axum", "trpc", "none"
 
     # Database
-    database: str | None = None          # "postgres", "sqlite", "supabase", "none"
+    database: str | None = None  # "postgres", "sqlite", "supabase", "none"
 
     # Template key — set if a known template matches exactly
     template_key: str | None = None
@@ -46,11 +46,11 @@ class StackProfile:
 # Map from template_key → human label
 KNOWN_TEMPLATES: dict[str, str] = {
     "flutter-riverpod-pg": "Flutter (Riverpod) + Postgres",
-    "flutter-bloc-pg":     "Flutter (BLoC) + Postgres",
-    "next-trpc-pg":        "Next.js + tRPC + Postgres",
-    "next-fastapi-pg":     "Next.js + FastAPI + Postgres",
-    "next-axum-pg":        "Next.js + Axum + Postgres",
-    "spa-fastapi-pg":      "Vite/React + FastAPI + Postgres",
+    "flutter-bloc-pg": "Flutter (BLoC) + Postgres",
+    "next-trpc-pg": "Next.js + tRPC + Postgres",
+    "next-fastapi-pg": "Next.js + FastAPI + Postgres",
+    "next-axum-pg": "Next.js + Axum + Postgres",
+    "spa-fastapi-pg": "Vite/React + FastAPI + Postgres",
 }
 
 
@@ -77,6 +77,7 @@ def detect(root: Path) -> StackProfile:
 
 # ── per-ecosystem sniffers ────────────────────────────────────────────────────
 
+
 def _detect_flutter(root: Path, profile: StackProfile) -> None:
     pubspec = root / "pubspec.yaml"
     if not pubspec.exists():
@@ -88,13 +89,12 @@ def _detect_flutter(root: Path, profile: StackProfile) -> None:
 
     try:
         import yaml  # type: ignore[import]
-        data = yaml.safe_load(pubspec.read_text())
+
+        yaml.safe_load(pubspec.read_text())  # validate but always use raw text below
     except Exception:
-        # Fall back to raw text scan if pyyaml not installed
-        text = pubspec.read_text()
-        data = None
-    else:
-        text = pubspec.read_text()
+        pass  # yaml not available, fall back to raw text scan
+
+    text = pubspec.read_text()
 
     profile.frontend = "flutter"
 
@@ -152,6 +152,7 @@ def _detect_node(root: Path, profile: StackProfile) -> None:
             continue
         try:
             import json
+
             data = json.loads(candidate.read_text())
         except Exception:
             continue
@@ -210,14 +211,21 @@ def _detect_database(root: Path, profile: StackProfile) -> None:
 
 # ── resolution ────────────────────────────────────────────────────────────────
 
+
 def _resolve_template_key(profile: StackProfile) -> None:
     mapping: list[tuple[dict, str]] = [
-        ({"frontend": "flutter", "state_management": "riverpod", "database": "postgres"}, "flutter-riverpod-pg"),
-        ({"frontend": "flutter", "state_management": "bloc",     "database": "postgres"}, "flutter-bloc-pg"),
-        ({"frontend": "nextjs",  "backend": "trpc",              "database": "postgres"}, "next-trpc-pg"),
-        ({"frontend": "nextjs",  "backend": "fastapi",           "database": "postgres"}, "next-fastapi-pg"),
-        ({"frontend": "nextjs",  "backend": "axum",              "database": "postgres"}, "next-axum-pg"),
-        ({"frontend": "react",   "backend": "fastapi",           "database": "postgres"}, "spa-fastapi-pg"),
+        (
+            {"frontend": "flutter", "state_management": "riverpod", "database": "postgres"},
+            "flutter-riverpod-pg",
+        ),
+        (
+            {"frontend": "flutter", "state_management": "bloc", "database": "postgres"},
+            "flutter-bloc-pg",
+        ),
+        ({"frontend": "nextjs", "backend": "trpc", "database": "postgres"}, "next-trpc-pg"),
+        ({"frontend": "nextjs", "backend": "fastapi", "database": "postgres"}, "next-fastapi-pg"),
+        ({"frontend": "nextjs", "backend": "axum", "database": "postgres"}, "next-axum-pg"),
+        ({"frontend": "react", "backend": "fastapi", "database": "postgres"}, "spa-fastapi-pg"),
     ]
     for criteria, key in mapping:
         if all(getattr(profile, k) == v for k, v in criteria.items()):
@@ -241,6 +249,7 @@ def _build_description(profile: StackProfile) -> None:
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _flatten_deps(toml_data: dict) -> set[str]:
     """Extract all dependency names from a pyproject.toml or Cargo.toml."""

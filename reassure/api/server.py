@@ -33,12 +33,14 @@ from reassure.core.repo_walker import walk_repo
 
 try:
     from reassure.analyzers.blast_radius import analyze_blast_radius, get_diff, parse_diff
+
     _HAS_BLAST_RADIUS = True
 except ImportError:
     _HAS_BLAST_RADIUS = False
 
 try:
     from reassure.analyzers.solid import SolidAnalyzer
+
     _HAS_SOLID = True
 except ImportError:
     _HAS_SOLID = False
@@ -121,7 +123,9 @@ def analyze(req: AnalyzeRequest) -> dict:
 @app.post("/blast-radius")
 def blast_radius(req: BlastRadiusRequest) -> dict:
     if not _HAS_BLAST_RADIUS:
-        raise HTTPException(status_code=501, detail="blast_radius analyzer not available in this build")
+        raise HTTPException(
+            status_code=501, detail="blast_radius analyzer not available in this build"
+        )
     root = _resolve(req.path)
 
     try:
@@ -222,6 +226,7 @@ def get_config(path: str) -> dict:
         return {"exists": False, "config": _default_config()}
     try:
         import tomllib
+
         with open(config_path, "rb") as f:
             config = tomllib.load(f)
         return {"exists": True, "config": config}
@@ -235,6 +240,7 @@ def put_config(req: ConfigWriteRequest) -> dict:
     config_path = root / ".reassure.toml"
     try:
         import tomli_w
+
         with open(config_path, "wb") as f:
             tomli_w.dump(req.config, f)
         return {"written": True, "path": str(config_path)}

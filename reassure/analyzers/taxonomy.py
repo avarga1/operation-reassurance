@@ -19,10 +19,11 @@ from __future__ import annotations
 
 import fnmatch
 import re
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+import tomllib
 
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.plugin import AnalyzerResult
@@ -30,19 +31,19 @@ from reassure.plugin import AnalyzerResult
 
 @dataclass
 class TaxonomyRule:
-    pattern: str                          # glob, matched against filename
-    purpose: str                          # human label ("UI scaffold — composes widgets")
+    pattern: str  # glob, matched against filename
+    purpose: str  # human label ("UI scaffold — composes widgets")
     max_loc: int | None = None
     forbidden_imports: list[str] = field(default_factory=list)
     forbidden_content: list[str] = field(default_factory=list)
-    message: str = ""                     # shown to LLM on violation
+    message: str = ""  # shown to LLM on violation
 
 
 @dataclass
 class TaxonomyViolation:
     file: Path
     rule: TaxonomyRule
-    reasons: list[str]                    # ["exceeds 150 LOC (1664)", "forbidden import: sqflite"]
+    reasons: list[str]  # ["exceeds 150 LOC (1664)", "forbidden import: sqflite"]
 
 
 @dataclass
@@ -208,13 +209,14 @@ _AXUM_RULES: list[TaxonomyRule] = [
 # Map detected stack → default rules
 _DEFAULT_RULESETS: dict[str, list[TaxonomyRule]] = {
     "flutter-riverpod": _FLUTTER_RIVERPOD_RULES,
-    "flutter-bloc":     _FLUTTER_BLOC_RULES,
-    "fastapi":          _FASTAPI_RULES,
-    "axum":             _AXUM_RULES,
+    "flutter-bloc": _FLUTTER_BLOC_RULES,
+    "fastapi": _FASTAPI_RULES,
+    "axum": _AXUM_RULES,
 }
 
 
 # ── analyzer ──────────────────────────────────────────────────────────────────
+
 
 class TaxonomyAnalyzer:
     name = "taxonomy"
@@ -256,6 +258,7 @@ class TaxonomyAnalyzer:
 
     def render_terminal(self, result: AnalyzerResult, root: Path) -> None:
         from reassure.output.terminal import render_taxonomy
+
         render_taxonomy(result.data, root=root)
 
     def _load_rules(self, root: Path) -> list[TaxonomyRule]:
@@ -266,6 +269,7 @@ class TaxonomyAnalyzer:
 
 
 # ── core logic ────────────────────────────────────────────────────────────────
+
 
 def analyze_taxonomy(index: RepoIndex, rules: list[TaxonomyRule]) -> TaxonomyReport:
     report = TaxonomyReport(rules_applied=len(rules))
@@ -282,11 +286,13 @@ def analyze_taxonomy(index: RepoIndex, rules: list[TaxonomyRule]) -> TaxonomyRep
         for rule in matching:
             reasons = _check_rule(file, rule, imports)
             if reasons:
-                report.violations.append(TaxonomyViolation(
-                    file=file.path,
-                    rule=rule,
-                    reasons=reasons,
-                ))
+                report.violations.append(
+                    TaxonomyViolation(
+                        file=file.path,
+                        rule=rule,
+                        reasons=reasons,
+                    )
+                )
 
     report.files_checked = len(checked)
     return report
@@ -330,6 +336,7 @@ def check_file(
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _matching_rules(path: Path, rules: list[TaxonomyRule]) -> list[TaxonomyRule]:
     """Return all rules whose pattern matches the file's name."""
@@ -420,14 +427,16 @@ def _rules_from_toml(path: Path) -> list[TaxonomyRule]:
     for r in raw_rules:
         if "pattern" not in r:
             continue
-        result.append(TaxonomyRule(
-            pattern=r["pattern"],
-            purpose=r.get("purpose", ""),
-            max_loc=r.get("max_loc"),
-            forbidden_imports=r.get("forbidden_imports", []),
-            forbidden_content=r.get("forbidden_content", []),
-            message=r.get("message", ""),
-        ))
+        result.append(
+            TaxonomyRule(
+                pattern=r["pattern"],
+                purpose=r.get("purpose", ""),
+                max_loc=r.get("max_loc"),
+                forbidden_imports=r.get("forbidden_imports", []),
+                forbidden_content=r.get("forbidden_content", []),
+                message=r.get("message", ""),
+            )
+        )
 
     # If no [[rules]] defined but stack is set, fall back to defaults
     if not result:
