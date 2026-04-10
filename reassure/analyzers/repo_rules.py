@@ -131,6 +131,34 @@ PRESETS: dict[str, list[RepoRule]] = {
             severity="warning",
             message="Remove debug-only code paths before release.",
         ),
+        RepoRule(
+            name="no-inline-box-decoration",
+            pattern="lib/**/*.dart",
+            forbidden_content=["BoxDecoration("],
+            severity="warning",
+            message="Extract BoxDecoration to a theme extension or a named const style variable.",
+        ),
+        RepoRule(
+            name="no-inline-opacity",
+            pattern="lib/**/*.dart",
+            forbidden_content=[".withValues(alpha:", ".withOpacity("],
+            severity="warning",
+            message="Use a named color token from your theme instead of inline alpha/opacity.",
+        ),
+        RepoRule(
+            name="no-raw-border-radius",
+            pattern="lib/**/*.dart",
+            forbidden_content=["BorderRadius.circular(", "BorderRadius.only(", "BorderRadius.all("],
+            severity="warning",
+            message="Use theme radius tokens (e.g. theme.radii.*) instead of hardcoded BorderRadius.",
+        ),
+        RepoRule(
+            name="no-raw-edge-insets",
+            pattern="lib/**/*.dart",
+            forbidden_content=["EdgeInsets.symmetric(", "EdgeInsets.all(", "EdgeInsets.only(", "EdgeInsets.fromLTRB("],
+            severity="warning",
+            message="Use theme spacing tokens instead of hardcoded EdgeInsets.",
+        ),
     ],
     "python": [
         RepoRule(

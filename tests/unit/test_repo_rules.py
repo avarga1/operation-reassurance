@@ -271,3 +271,70 @@ class TestPresets:
                 assert rule.name, f"Rule in {preset_name} has no name"
                 assert rule.pattern, f"Rule '{rule.name}' has no pattern"
                 assert rule.forbidden_content, f"Rule '{rule.name}' has no forbidden_content"
+
+
+# ── flutter style / DRY rules ─────────────────────────────────────────────────
+
+
+class TestFlutterStyleRules:
+    def test_inline_box_decoration_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/card.dart"),
+            "decoration: BoxDecoration(\n  color: Colors.blue,\n),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-inline-box-decoration" for v in violations)
+
+    def test_with_opacity_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/chip.dart"),
+            "color: nodeColor.withOpacity(0.1),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-inline-opacity" for v in violations)
+
+    def test_with_values_alpha_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/chip.dart"),
+            "color: nodeColor.withValues(alpha: 0.3),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-inline-opacity" for v in violations)
+
+    def test_raw_border_radius_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/card.dart"),
+            "borderRadius: BorderRadius.circular(8),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-raw-border-radius" for v in violations)
+
+    def test_raw_edge_insets_flagged(self):
+        rules = PRESETS["flutter"]
+        violations = check_content(
+            Path("lib/widgets/card.dart"),
+            "padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),\n",
+            rules,
+            root=Path("/repo"),
+        )
+        assert any(v.rule.name == "no-raw-edge-insets" for v in violations)
+
+    def test_style_rules_are_warnings_not_errors(self):
+        rules = PRESETS["flutter"]
+        style_rule_names = {
+            "no-inline-box-decoration",
+            "no-inline-opacity",
+            "no-raw-border-radius",
+            "no-raw-edge-insets",
+        }
+        for rule in rules:
+            if rule.name in style_rule_names:
+                assert rule.severity == "warning", f"{rule.name} should be warning not error"
