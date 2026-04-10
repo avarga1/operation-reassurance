@@ -1,0 +1,26 @@
+# {{project_name}}
+
+Stack: **{{template_key}}**
+
+## Architecture rules
+
+This project uses reassure taxonomy enforcement. Before writing to any file:
+
+1. Call `get_symbol_map()` to see what already exists
+2. Call `get_blast_radius()` before touching shared symbols
+3. Respect the layer boundaries enforced by `.reassure.toml`
+
+## Where things go
+
+See `.reassure.toml` for the full ruleset. Short version:
+
+- **UI** — screens/pages only. No business logic, no direct data access.
+- **Logic** — services, blocs, notifiers. No UI imports.
+- **Data** — repositories only. Owns all network and storage calls.
+- **Core** — constants, theme, utils. Keep it small. Lock files when done.
+
+## Do not
+
+- Add business logic to a screen/page
+- Import UI packages from a service or repository
+- Push past the LoC limits without a good reason — split the file instead

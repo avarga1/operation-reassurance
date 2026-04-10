@@ -20,7 +20,8 @@ function addRecent(path: string) {
 
 // Global repo path state — simple module-level for now
 let _listeners: Array<(path: string) => void> = [];
-let _currentPath = getRecent()[0] ?? "";
+let _currentPath =
+  getRecent()[0] ?? (import.meta.env.VITE_REASSURE_PATH as string | undefined) ?? "";
 
 export function useRepoPath() {
   const [path, setPath] = useState(_currentPath);

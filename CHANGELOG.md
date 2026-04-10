@@ -13,6 +13,36 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Plugin protocol — extensible analyzer interface (#8)
 - Next.js + shadcn/ui frontend — replace Streamlit (#9)
 - Python symbol extractor tests (#1) — contributor: @poojakaskare
+- Folder structure analyzer — feature-first layout enforcement (#36)
+
+---
+
+## [0.4.0] — 2026-04-10
+
+### Added
+- **Taxonomy analyzer** (`reassure/analyzers/taxonomy.py`) — enforces file-pattern contracts at the layer boundary level
+  - Built-in default rulesets for Flutter/Riverpod, Flutter/BLoC, FastAPI, and Axum
+  - Auto-detects stack by walking up the directory tree for `pubspec.yaml`, `Cargo.toml`, `pyproject.toml`
+  - `analyze_taxonomy()` — full repo scan against `[[rules]]` in `.reassure.toml`
+  - `check_file()` — single-file check for PreToolUse hook and MCP tool (no RepoIndex needed)
+  - `TaxonomyRule` — pattern, purpose, max_loc, forbidden_imports, forbidden_content, message
+  - 26 unit tests covering import extraction (Dart/Python/Rust/TS), pattern matching, LOC limits, forbidden imports, BLoC rules
+- **`check_taxonomy` MCP tool** — call before writing any file; returns `{blocked, violations}` with the message to show the LLM
+- **`reassure init` CLI command** — scaffolds new projects or installs rules into existing ones
+  - `detector.py` — sniffs stack from `pubspec.yaml`, `Cargo.toml`, `pyproject.toml`, `package.json`, `docker-compose.yml`; resolves to a `StackProfile` with `template_key`, `description`, `warnings`
+  - `scaffolder.py` — renders templates to disk with `{{placeholders}}` in content and filenames; merges `_partials/` with template-specific overrides
+  - Interactive prompt with auto-detected stack suggestion; `--name`, `--stack`, `--rules-only` flags
+  - 27 unit tests covering detection, rendering, overwrite, error cases
+- **`flutter-riverpod-pg` starter template** — proper Riverpod layer structure with auth feature example, tests, `.reassure.toml`, `.mcp.json`, `CLAUDE.md`
+- **`templates/_partials/`** — shared base `.reassure.toml`, `.mcp.json`, `CLAUDE.md` across all stacks
+- **`render_taxonomy` terminal renderer** — Rich table grouped by file, shows rule, reasons, and LLM message
+- CLI refactored to `click.group` — `reassure analyse <path>` and `reassure init`; backwards-compatible
+
+### Issues filed
+- #32 — docs: real-world MCP session transcript example
+- #33 — taxonomy rules with PreToolUse enforcement
+- #34 — file locks (lock for Claude)
+- #35 — `reassure init` + starter templates
 
 ---
 

@@ -1,0 +1,20 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:{{project_name_snake}}/features/auth/data/auth_repository.dart';
+
+void main() {
+  group('AuthRepository', () {
+    late AuthRepository repo;
+
+    setUp(() => repo = AuthRepository());
+
+    test('signIn returns a UserModel with matching email', () async {
+      final user = await repo.signIn(email: 'test@example.com', password: 'pw');
+      expect(user.email, equals('test@example.com'));
+    });
+
+    test('signOut completes without error', () async {
+      await expectLater(repo.signOut(), completes);
+    });
+  });
+}

@@ -27,6 +27,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.taxonomy import TaxonomyAnalyzer, check_file, _detect_default_rules, _rules_from_toml
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.core.repo_walker import walk_repo
 from reassure.plugin import Analyzer
@@ -43,6 +44,7 @@ mcp = FastMCP(
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    TaxonomyAnalyzer(),
 ]
 
 
@@ -135,6 +137,66 @@ def get_uncovered_symbols(path: str) -> dict:
         "summary": result.summary,
         "uncovered": result.issues,
     }
+
+
+@mcp.tool(
+    name="check_taxonomy",
+    description=(
+        "Check whether a proposed file write violates taxonomy rules for this repo. "
+        "Call this BEFORE writing to any file. Returns violations with the message to show "
+        "if the write should be blocked. Returns empty list if the write is clean."
+    ),
+)
+def check_taxonomy(path: str, proposed_content: str) -> dict:
+    """
+    path            — absolute path of the file being written (may not exist yet)
+    proposed_content — the full content you are about to write
+    """
+    file_path = Path(path).expanduser().resolve()
+
+    # Find repo root by walking up to find .reassure.toml or pubspec.yaml / Cargo.toml
+    root = _find_repo_root(file_path)
+    toml_path = root / ".reassure.toml" if root else None
+
+    if toml_path and toml_path.exists():
+        rules = _rules_from_toml(toml_path)
+    elif root:
+        rules = _detect_default_rules(root)
+    else:
+        rules = _detect_default_rules(file_path.parent)
+
+    violations = check_file(file_path, proposed_content, rules)
+
+    if not violations:
+        return {"blocked": False, "violations": []}
+
+    return {
+        "blocked": True,
+        "violations": [
+            {
+                "file": str(v.file),
+                "rule_pattern": v.rule.pattern,
+                "purpose": v.rule.purpose,
+                "reasons": v.reasons,
+                "message": v.rule.message,
+            }
+            for v in violations
+        ],
+    }
+
+
+def _find_repo_root(start: Path) -> Path | None:
+    """Walk up from start looking for .reassure.toml, pubspec.yaml, Cargo.toml, or pyproject.toml."""
+    markers = {".reassure.toml", "pubspec.yaml", "Cargo.toml", "pyproject.toml", ".git"}
+    current = start if start.is_dir() else start.parent
+    for _ in range(10):
+        if any((current / m).exists() for m in markers):
+            return current
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return None
 
 
 if __name__ == "__main__":

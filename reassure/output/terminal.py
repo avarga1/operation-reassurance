@@ -14,6 +14,7 @@ from rich.table import Table
 from rich.text import Text
 
 from reassure.analyzers.observability import ObservabilityReport
+from reassure.analyzers.taxonomy import TaxonomyReport
 from reassure.analyzers.test_coverage import CoverageReport
 from reassure.classifiers.test_type import TestType
 
@@ -158,3 +159,48 @@ def render_observability(report: ObservabilityReport, root: Path | None = None) 
     console.print(
         f"  [red]{report.dark_functions} dark functions[/red]  [dim]{len(report.dark_module_paths)} dark modules[/dim]"
     )
+
+
+def render_taxonomy(report: TaxonomyReport, root: Path | None = None) -> None:
+    """
+    Render taxonomy violation report.
+
+    Groups violations by file. Shows which rule was violated, why, and
+    the message the LLM would see from the PreToolUse hook.
+    """
+    title = Text()
+    title.append("Taxonomy  ")
+    if report.violations:
+        title.append(f"{len(report.violations)} violations", style="bold red")
+    else:
+        title.append("clean", style="bold green")
+    title.append(
+        f"  ({report.files_checked} files checked, {report.rules_applied} rules)",
+        style="dim",
+    )
+
+    if not report.violations:
+        console.print(Panel(Text("All files within taxonomy rules ✓", style="bold green"), title=str(title)))
+        return
+
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        border_style="dim",
+        expand=True,
+    )
+    table.add_column("File", style="bold red", min_width=30, no_wrap=True)
+    table.add_column("Rule", style="dim", no_wrap=True)
+    table.add_column("Violations", no_wrap=False)
+
+    for v in sorted(report.violations, key=lambda x: str(x.file)):
+        file_display = v.file.relative_to(root) if root and root in v.file.parents else v.file
+        table.add_row(
+            str(file_display),
+            f"[dim]{v.rule.pattern}[/dim]\n[italic]{v.rule.purpose}[/italic]",
+            "\n".join(f"[red]✗[/red] {r}" for r in v.reasons),
+        )
+        if v.rule.message:
+            table.add_row("", "", f"[yellow italic]{v.rule.message}[/yellow italic]")
+
+    console.print(Panel(table, title=str(title)))
