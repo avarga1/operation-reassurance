@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import toml
+import toml  # type: ignore[import-untyped]
 
 
 @dataclass
