@@ -27,6 +27,10 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.repo_rules import RepoRulesAnalyzer, list_presets
+from reassure.analyzers.repo_rules import _detect_default_rules as _detect_repo_rules
+from reassure.analyzers.repo_rules import _rules_from_toml as _repo_rules_from_toml
+from reassure.analyzers.repo_rules import check_content as check_rule_content
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.core.repo_walker import walk_repo
 from reassure.plugin import Analyzer
@@ -43,6 +47,7 @@ mcp = FastMCP(
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    RepoRulesAnalyzer(),
 ]
 
 
@@ -135,6 +140,74 @@ def get_uncovered_symbols(path: str) -> dict:
         "summary": result.summary,
         "uncovered": result.issues,
     }
+
+
+@mcp.tool(
+    name="check_repo_rules",
+    description=(
+        "Check whether proposed file content violates any repo rules (no mock data, "
+        "no hardcoded URLs, no print() in prod, etc). Call this BEFORE writing any file. "
+        "Returns matched violations with severity and the message to show."
+    ),
+)
+def check_repo_rules(path: str, proposed_content: str) -> dict:
+    """
+    path             — absolute path of the file being written
+    proposed_content — full content you are about to write
+    """
+    file_path = Path(path).expanduser().resolve()
+    root = _find_repo_root(file_path)
+    toml_path = root / ".reassure.toml" if root else None
+
+    if toml_path and toml_path.exists():
+        rules = _repo_rules_from_toml(toml_path)
+    elif root:
+        rules = _detect_repo_rules(root)
+    else:
+        rules = _detect_repo_rules(file_path.parent)
+
+    matches = check_rule_content(file_path, proposed_content, rules, root)
+    errors = [m for m in matches if m.rule.severity == "error"]
+
+    if not matches:
+        return {"blocked": False, "violations": []}
+
+    return {
+        "blocked": bool(errors),
+        "violations": [
+            {
+                "rule": m.rule.name,
+                "severity": m.rule.severity,
+                "file": str(m.file),
+                "line": m.line,
+                "matched": m.matched_content.strip(),
+                "message": m.rule.message,
+            }
+            for m in matches
+        ],
+    }
+
+
+@mcp.tool(
+    name="list_repo_rule_presets",
+    description="List available built-in repo rule presets (flutter, python, rust, general) and their rules.",
+)
+def list_repo_rule_presets() -> dict:
+    return list_presets()
+
+
+def _find_repo_root(start: Path) -> Path | None:
+    """Walk up from start looking for config markers."""
+    markers = {".reassure.toml", "pubspec.yaml", "Cargo.toml", "pyproject.toml", ".git"}
+    current = start if start.is_dir() else start.parent
+    for _ in range(10):
+        if any((current / m).exists() for m in markers):
+            return current
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return None
 
 
 if __name__ == "__main__":

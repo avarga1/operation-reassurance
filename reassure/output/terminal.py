@@ -14,6 +14,7 @@ from rich.table import Table
 from rich.text import Text
 
 from reassure.analyzers.observability import ObservabilityReport
+from reassure.analyzers.repo_rules import RepoRulesReport
 from reassure.analyzers.test_coverage import CoverageReport
 from reassure.classifiers.test_type import TestType
 
@@ -158,3 +159,67 @@ def render_observability(report: ObservabilityReport, root: Path | None = None) 
     console.print(
         f"  [red]{report.dark_functions} dark functions[/red]  [dim]{len(report.dark_module_paths)} dark modules[/dim]"
     )
+
+
+def render_repo_rules(report: RepoRulesReport, root: Path | None = None) -> None:
+    """Render repo rules violation report grouped by rule, then file."""
+    error_count = len(report.errors)
+    warn_count = len(report.warnings)
+
+    title = Text()
+    title.append("Repo Rules  ")
+    if error_count:
+        title.append(f"{error_count} errors", style="bold red")
+    if error_count and warn_count:
+        title.append("  ")
+    if warn_count:
+        title.append(f"{warn_count} warnings", style="bold yellow")
+    if not report.has_issues:
+        title.append("clean", style="bold green")
+    title.append(
+        f"  ({report.files_checked} files, {report.rules_applied} rules)",
+        style="dim",
+    )
+
+    if not report.has_issues:
+        console.print(
+            Panel(Text("All repo rules satisfied ✓", style="bold green"), title=str(title))
+        )
+        return
+
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        border_style="dim",
+        expand=True,
+    )
+    table.add_column("Rule", style="bold", min_width=24, no_wrap=True)
+    table.add_column("File:line", style="dim", no_wrap=True)
+    table.add_column("Match", no_wrap=False)
+
+    # Group by rule name
+    by_rule: dict[str, list] = {}
+    for m in report.matches:
+        by_rule.setdefault(m.rule.name, []).append(m)
+
+    for rule_name, matches in sorted(by_rule.items()):
+        rule = matches[0].rule
+        sev_style = "red" if rule.severity == "error" else "yellow"
+        sev_label = "✗" if rule.severity == "error" else "⚠"
+
+        for i, m in enumerate(matches):
+            try:
+                file_display = m.file.relative_to(root) if root else m.file
+            except ValueError:
+                file_display = m.file
+
+            table.add_row(
+                Text(f"{sev_label} {rule_name}", style=sev_style) if i == 0 else Text(""),
+                f"{file_display}:{m.line}",
+                Text(m.matched_content.strip(), style="dim"),
+            )
+
+        if rule.message:
+            table.add_row("", "", Text(f"→ {rule.message}", style="italic yellow"))
+
+    console.print(Panel(table, title=str(title)))
