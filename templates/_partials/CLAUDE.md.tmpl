@@ -1,0 +1,31 @@
+# {{project_name}}
+
+## Repo rules (enforced by reassure)
+
+This repo uses [operation-reassurance](https://github.com/avarga1/operation-reassurance)
+to enforce structural rules. A PreToolUse hook is active — **file writes that violate
+error-severity rules will be blocked automatically.**
+
+### Before writing any file
+
+Call the `check_repo_rules` MCP tool with the proposed path and content.
+Resolve all `error` violations before proceeding. `warning` violations should be
+fixed before merging but will not block the write.
+
+### Key rules for this stack
+
+| Rule | Severity | What it catches |
+|------|----------|-----------------|
+| no-print-in-prod | error | `print()` in lib/ |
+| no-inline-mock-data | error | MockData/FakeData/testUser in prod |
+| no-hardcoded-urls | error | Inline http/https strings |
+| no-localhost | error | localhost/127.0.0.1 in prod |
+| no-hardcoded-colors | warning | `Colors.red`, `Color(0x…)` |
+| no-inline-text-style | warning | `TextStyle(fontSize:…)` |
+| no-imperative-navigation | warning | `Navigator.push` |
+| no-media-query-size | warning | `MediaQuery.of(context).size` |
+| no-raw-border-radius | warning | `BorderRadius.circular(…)` |
+| no-raw-edge-insets | warning | `EdgeInsets.symmetric(…)` |
+| no-raw-sized-box-spacing | warning | `SizedBox(height:…)` |
+
+Run `reassure .` for a full repo health report.

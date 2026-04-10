@@ -541,10 +541,22 @@ def _rules_from_toml(path: Path) -> list[RepoRule]:
     return result
 
 
+def _find_upward(start: Path, filename: str) -> Path | None:
+    """Walk up directory tree looking for a file by name."""
+    current = start if start.is_dir() else start.parent
+    for _ in range(10):
+        candidate = current / filename
+        if candidate.exists():
+            return candidate
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return None
+
+
 def _detect_default_rules(root: Path) -> list[RepoRule]:
     """Walk up from root to detect stack and return matching preset."""
-    from reassure.analyzers.taxonomy import _find_upward
-
     pubspec = _find_upward(root, "pubspec.yaml")
     if not pubspec:
         candidates = list(root.glob("*/pubspec.yaml"))
