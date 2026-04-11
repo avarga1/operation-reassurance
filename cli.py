@@ -20,8 +20,12 @@ from typing import Any
 import click
 from rich.console import Console
 
+from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
+from reassure.analyzers.dead_code import DeadCodeAnalyzer
 from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.repo_rules import RepoRulesAnalyzer
+from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.taxonomy import TaxonomyAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.plugin import Analyzer, load_analyzer
@@ -29,8 +33,12 @@ from reassure.plugin import Analyzer, load_analyzer
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    SolidAnalyzer(),
+    DeadCodeAnalyzer(),
+    RepoRulesAnalyzer(),
     TaxonomyAnalyzer(),
     FolderStructureAnalyzer(),
+    BlastRadiusAnalyzer(),
 ]
 ANALYZER_NAMES = [a.name for a in BUILTIN_ANALYZERS]
 

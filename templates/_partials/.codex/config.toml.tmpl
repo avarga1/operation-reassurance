@@ -1,0 +1,10 @@
+# Codex MCP configuration for operation-reassurance.
+#
+# This wires the reassure MCP server into Codex so the agent can call
+# check_repo_rules, get_symbol_map, get_uncovered_symbols, etc.
+#
+# Requires reassure installed: pip install operation-reassurance
+
+[mcp_servers.reassure]
+command = "python3"
+args    = ["-m", "reassure.mcp.server"]

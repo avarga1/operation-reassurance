@@ -1,0 +1,19 @@
+/// Material Design 3 adaptive layout breakpoints.
+///
+/// MD3 defines three window size classes based on dp width.
+/// These map to: phone portrait / phone landscape+small tablet / large tablet+desktop.
+/// https://m3.material.io/foundations/layout/applying-layout/window-size-classes
+abstract final class Breakpoints {
+  /// Compact: 0–599dp — single-column layout, bottom navigation
+  static const double compact  = 600;
+
+  /// Medium: 600–839dp — two-column layout, navigation rail
+  static const double medium   = 840;
+
+  /// Expanded: 840dp+ — multi-column, nav drawer always visible
+  // (no upper bound)
+
+  /// Maximum content width for expanded layouts.
+  /// Content beyond this is centered, not stretched.
+  static const double maxContentWidth = 1200;
+}

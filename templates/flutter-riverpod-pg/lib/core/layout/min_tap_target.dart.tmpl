@@ -1,0 +1,24 @@
+import 'package:flutter/material.dart';
+
+/// Enforces the WCAG 2.5.5 / MD3 minimum 48×48dp interactive tap target.
+///
+/// Wrap any tappable widget smaller than 48dp to guarantee the touch area
+/// meets accessibility requirements without visually enlarging the widget.
+///
+/// Usage:
+///   MinTapTarget(child: Icon(Icons.close, size: 20))
+class MinTapTarget extends StatelessWidget {
+  const MinTapTarget({required this.child, this.size = 48, super.key});
+
+  final Widget child;
+
+  /// Minimum dimension in logical pixels. Default: 48dp (MD3 / WCAG 2.5.5).
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: size,
+        height: size,
+        child: Center(child: child),
+      );
+}
