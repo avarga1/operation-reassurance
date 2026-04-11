@@ -1,11 +1,9 @@
 """Tests for reassure.init.scaffolder."""
 
-from pathlib import Path
-
 import pytest
 
-from reassure.init.scaffolder import scaffold, list_templates, install_rules
 from reassure.init.detector import StackProfile
+from reassure.init.scaffolder import install_rules, list_templates, scaffold
 
 
 class TestListTemplates:

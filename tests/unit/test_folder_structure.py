@@ -2,21 +2,18 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.folder_structure import (
-    FolderRule,
+    _FLUTTER_BLOC_FOLDER_RULES,
+    _FLUTTER_RIVERPOD_FOLDER_RULES,
     FolderStructureAnalyzer,
+    _matches_folder_pattern,
     analyze_folder_structure,
     check_new_file,
-    _matches_folder_pattern,
-    _FLUTTER_RIVERPOD_FOLDER_RULES,
-    _FLUTTER_BLOC_FOLDER_RULES,
 )
 from reassure.core.repo_walker import RepoIndex
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_tree(tmp_path: Path, structure: dict) -> Path:
     """
@@ -41,6 +38,7 @@ def _index(root: Path) -> RepoIndex:
 
 # ── pattern matching ──────────────────────────────────────────────────────────
 
+
 class TestPatternMatching:
     def test_exact_match(self):
         assert _matches_folder_pattern("lib/pages", "lib/pages")
@@ -51,7 +49,9 @@ class TestPatternMatching:
 
     def test_wildcard_mid_path(self):
         assert _matches_folder_pattern("lib/features/auth/data", "lib/features/*/data")
-        assert _matches_folder_pattern("lib/features/auth/presentation", "lib/features/*/presentation")
+        assert _matches_folder_pattern(
+            "lib/features/auth/presentation", "lib/features/*/presentation"
+        )
 
     def test_no_match_different_depth(self):
         assert not _matches_folder_pattern("lib/features/auth/data/extra", "lib/features/*/data")
@@ -65,23 +65,30 @@ class TestPatternMatching:
 
 # ── analyze_folder_structure ──────────────────────────────────────────────────
 
+
 class TestAnalyzeFolderStructure:
     def test_flat_pages_dump_flagged(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/pages/login_page.dart": "",
-            "lib/pages/home_page.dart": "",
-            "lib/pages/profile_page.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/pages/login_page.dart": "",
+                "lib/pages/home_page.dart": "",
+                "lib/pages/profile_page.dart": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         assert report.has_issues
         folders = {str(v.folder) for v in report.violations}
         assert any("pages" in f for f in folders)
 
     def test_feature_missing_required_children(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/features/auth/presentation/login_screen.dart": "",
-            # missing data/ and domain/
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/features/auth/presentation/login_screen.dart": "",
+                # missing data/ and domain/
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         assert report.has_issues
         reasons = [r for v in report.violations for r in v.reasons]
@@ -89,26 +96,29 @@ class TestAnalyzeFolderStructure:
         assert any("domain" in r for r in reasons)
 
     def test_feature_with_all_children_passes(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/features/auth/data/auth_repository.dart": "",
-            "lib/features/auth/domain/user_model.dart": "",
-            "lib/features/auth/presentation/login_screen.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/features/auth/data/auth_repository.dart": "",
+                "lib/features/auth/domain/user_model.dart": "",
+                "lib/features/auth/presentation/login_screen.dart": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         # auth/ folder itself should be clean (has all required children, no loose files)
-        feature_violations = [
-            v for v in report.violations
-            if v.folder.name == "auth"
-        ]
+        feature_violations = [v for v in report.violations if v.folder.name == "auth"]
         assert feature_violations == []
 
     def test_feature_loose_files_flagged(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/features/auth/some_util.dart": "",  # loose file in feature root
-            "lib/features/auth/data/auth_repository.dart": "",
-            "lib/features/auth/domain/user_model.dart": "",
-            "lib/features/auth/presentation/login_screen.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/features/auth/some_util.dart": "",  # loose file in feature root
+                "lib/features/auth/data/auth_repository.dart": "",
+                "lib/features/auth/domain/user_model.dart": "",
+                "lib/features/auth/presentation/login_screen.dart": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         feature_violations = [v for v in report.violations if v.folder.name == "auth"]
         assert len(feature_violations) > 0
@@ -141,10 +151,13 @@ class TestAnalyzeFolderStructure:
         assert len(core_violations) > 0
 
     def test_unrelated_dirs_not_checked(self, tmp_path):
-        _make_tree(tmp_path, {
-            "backend/services/auth_service.py": "",
-            "backend/services/user_service.py": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "backend/services/auth_service.py": "",
+                "backend/services/user_service.py": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         assert not report.has_issues
 
@@ -153,15 +166,19 @@ class TestAnalyzeFolderStructure:
         assert not report.has_issues
 
     def test_folders_checked_count(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/pages/login_page.dart": "",
-            "lib/core/constants.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/pages/login_page.dart": "",
+                "lib/core/constants.dart": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_RIVERPOD_FOLDER_RULES)
         assert report.folders_checked >= 2
 
 
 # ── check_new_file (PreToolUse path) ─────────────────────────────────────────
+
 
 class TestCheckNewFile:
     def test_writing_to_pages_blocked(self, tmp_path):
@@ -199,6 +216,7 @@ class TestCheckNewFile:
 
 # ── FolderStructureAnalyzer (plugin protocol) ─────────────────────────────────
 
+
 class TestFolderStructureAnalyzer:
     def test_result_name(self, tmp_path):
         analyzer = FolderStructureAnalyzer.__new__(FolderStructureAnalyzer)
@@ -208,10 +226,13 @@ class TestFolderStructureAnalyzer:
         assert result.name == "folder_structure"
 
     def test_issues_format(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/pages/login_page.dart": "",
-            "lib/pages/home_page.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/pages/login_page.dart": "",
+                "lib/pages/home_page.dart": "",
+            },
+        )
         analyzer = FolderStructureAnalyzer.__new__(FolderStructureAnalyzer)
         analyzer._load_rules = lambda root: _FLUTTER_RIVERPOD_FOLDER_RULES
         index = _index(tmp_path)
@@ -233,12 +254,16 @@ class TestFolderStructureAnalyzer:
 
 # ── BLoC rules ────────────────────────────────────────────────────────────────
 
+
 class TestBlocFolderRules:
     def test_bloc_feature_missing_required_children(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/features/auth/view/login_page.dart": "",
-            # missing bloc/ and data/
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/features/auth/view/login_page.dart": "",
+                # missing bloc/ and data/
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_BLOC_FOLDER_RULES)
         assert report.has_issues
         reasons = [r for v in report.violations for r in v.reasons]
@@ -246,11 +271,14 @@ class TestBlocFolderRules:
         assert any("data" in r for r in reasons)
 
     def test_bloc_feature_complete_passes(self, tmp_path):
-        _make_tree(tmp_path, {
-            "lib/features/auth/bloc/auth_bloc.dart": "",
-            "lib/features/auth/data/auth_repository.dart": "",
-            "lib/features/auth/view/login_page.dart": "",
-        })
+        _make_tree(
+            tmp_path,
+            {
+                "lib/features/auth/bloc/auth_bloc.dart": "",
+                "lib/features/auth/data/auth_repository.dart": "",
+                "lib/features/auth/view/login_page.dart": "",
+            },
+        )
         report = analyze_folder_structure(tmp_path, _FLUTTER_BLOC_FOLDER_RULES)
         feature_violations = [v for v in report.violations if v.folder.name == "auth"]
         assert feature_violations == []
