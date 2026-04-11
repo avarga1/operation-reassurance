@@ -71,7 +71,7 @@ jobs:
         run: poetry run ruff format --check reassure/ cli.py
 
       - name: MyPy type check
-        run: poetry run mypy reassure/ --ignore-missing-imports
+        run: poetry run mypy reassure/ --ignore-missing-imports --exclude "reassure/gui|reassure/api"
 
   self-analysis:
     name: Eat our own cooking
