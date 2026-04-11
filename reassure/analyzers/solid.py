@@ -356,28 +356,34 @@ class SolidAnalyzer:
         for gf in god_files:
             issues.append({"type": "god_file", "file": str(gf.file.path), "reasons": gf.reasons})
         for gc in god_classes:
-            issues.append({
-                "type": "god_class",
-                "symbol": gc.symbol.name,
-                "file": str(gc.symbol.file),
-                "line": gc.symbol.line_start,
-                "method_count": gc.method_count,
-                "reasons": gc.reasons,
-            })
+            issues.append(
+                {
+                    "type": "god_class",
+                    "symbol": gc.symbol.name,
+                    "file": str(gc.symbol.file),
+                    "line": gc.symbol.line_start,
+                    "method_count": gc.method_count,
+                    "reasons": gc.reasons,
+                }
+            )
         for gfn in god_functions:
-            issues.append({
-                "type": "god_function",
-                "symbol": gfn.symbol.name,
-                "file": str(gfn.symbol.file),
-                "line": gfn.symbol.line_start,
-                "complexity": gfn.complexity,
-            })
+            issues.append(
+                {
+                    "type": "god_function",
+                    "symbol": gfn.symbol.name,
+                    "file": str(gfn.symbol.file),
+                    "line": gfn.symbol.line_start,
+                    "complexity": gfn.complexity,
+                }
+            )
         for sv in soc_violations:
-            issues.append({
-                "type": "soc_violation",
-                "file": str(sv["file"]),
-                "reason": sv["reason"],
-            })
+            issues.append(
+                {
+                    "type": "soc_violation",
+                    "file": str(sv["file"]),
+                    "reason": sv["reason"],
+                }
+            )
 
         return AnalyzerResult(name=self.name, summary=summary, data=report, issues=issues)
 

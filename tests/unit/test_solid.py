@@ -2,11 +2,7 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.solid import (
-    GodFile,
-    GodFunction,
     SolidAnalyzer,
     compute_cyclomatic_complexity,
     detect_god_classes,
@@ -16,7 +12,6 @@ from reassure.analyzers.solid import (
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.core.symbol_map import Symbol
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -190,9 +185,7 @@ class TestCyclomaticComplexity:
 class TestGodFunctionDetection:
     def test_high_complexity_flagged(self):
         source = "\n".join(
-            ["def complex():"]
-            + [f"    if x_{i}: pass" for i in range(15)]
-            + ["    return True"]
+            ["def complex():"] + [f"    if x_{i}: pass" for i in range(15)] + ["    return True"]
         )
         sym = _sym("complex", line_start=1, line_end=len(source.splitlines()))
         rec = _record("/repo/src/complex.py", [sym], source=source)
@@ -229,7 +222,7 @@ class TestSoCViolations:
         rec = _record("/repo/lib/home.dart", syms, lang="dart")
         violations = detect_soc_violations(_index(rec))
         assert len(violations) > 0
-        assert any("archetype_co_residence" == v["type"] for v in violations)
+        assert any(v["type"] == "archetype_co_residence" for v in violations)
 
     def test_single_archetype_not_flagged(self):
         syms = [_sym("HomeScreen", kind="class", lang="dart")]

@@ -1,12 +1,11 @@
 """Unit tests for the test type classifier."""
 
-import pytest
 from pathlib import Path
 
 from reassure.classifiers.test_type import (
     TestType,
-    classify_test_file,
     classify_all,
+    classify_test_file,
 )
 
 

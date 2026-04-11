@@ -5,13 +5,12 @@ from pathlib import Path
 from reassure.analyzers.test_coverage import (
     CoverageReport,
     SymbolCoverage,
-    _build_test_reference_map,
     _collect_references,
     analyze_coverage,
 )
-from reassure.classifiers.test_type import TestClassification, TestType
+from reassure.classifiers.test_type import TestType
 from reassure.core.parser import parse_source
-from reassure.core.repo_walker import FileRecord, RepoIndex, walk_repo
+from reassure.core.repo_walker import walk_repo
 from reassure.core.symbol_map import Symbol
 
 FIXTURE = Path(__file__).parent.parent / "fixtures" / "sample_repo"
@@ -66,8 +65,7 @@ class TestAnalyzeCoverage:
         from reassure.classifiers.test_type import classify_test_file
 
         self.classifications = {
-            f.path: classify_test_file(f.path, list(f.imports), [])
-            for f in self.index.test_files
+            f.path: classify_test_file(f.path, list(f.imports), []) for f in self.index.test_files
         }
 
     def test_finds_source_symbols(self):
@@ -101,8 +99,12 @@ class TestAnalyzeCoverage:
 class TestSymbolCoverage:
     def _sym(self):
         return Symbol(
-            name="foo", kind="function", file=Path("src/foo.py"),
-            line_start=1, line_end=5, lang="python",
+            name="foo",
+            kind="function",
+            file=Path("src/foo.py"),
+            line_start=1,
+            line_end=5,
+            lang="python",
         )
 
     def test_uncovered_when_no_tests(self):
@@ -132,8 +134,12 @@ class TestSymbolCoverage:
 class TestCoverageReport:
     def _sym(self, name: str):
         return Symbol(
-            name=name, kind="function", file=Path("src/foo.py"),
-            line_start=1, line_end=5, lang="python",
+            name=name,
+            kind="function",
+            file=Path("src/foo.py"),
+            line_start=1,
+            line_end=5,
+            lang="python",
         )
 
     def test_coverage_pct_all_covered(self):

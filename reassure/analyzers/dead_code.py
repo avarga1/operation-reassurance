@@ -35,18 +35,20 @@ from reassure.plugin import AnalyzerResult
 _IDENTIFIER_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\b")
 
 # Default entry point names — always considered live regardless of references
-_DEFAULT_ENTRY_POINTS = frozenset({
-    "main",
-    "app",
-    "run",
-    "handler",
-    "create_app",
-    "make_app",
-    "setup",
-    "teardown",
-    "pytest_configure",
-    "pytest_sessionstart",
-})
+_DEFAULT_ENTRY_POINTS = frozenset(
+    {
+        "main",
+        "app",
+        "run",
+        "handler",
+        "create_app",
+        "make_app",
+        "setup",
+        "teardown",
+        "pytest_configure",
+        "pytest_sessionstart",
+    }
+)
 
 
 @dataclass
@@ -232,7 +234,9 @@ class DeadCodeAnalyzer:
             f"({report.files_checked} files)"
         )
         if total_dead == 0:
-            summary = f"No dead code found ({report.total_symbols} symbols, {report.files_checked} files)"
+            summary = (
+                f"No dead code found ({report.total_symbols} symbols, {report.files_checked} files)"
+            )
 
         return AnalyzerResult(name=self.name, summary=summary, data=report, issues=issues)
 
