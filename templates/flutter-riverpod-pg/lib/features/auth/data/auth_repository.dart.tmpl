@@ -1,0 +1,25 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../domain/user_model.dart';
+
+part 'auth_repository.g.dart';
+
+/// Data access for authentication.
+/// Owns all network and storage calls — no UI imports allowed.
+@riverpod
+AuthRepository authRepository(Ref ref) => AuthRepository();
+
+class AuthRepository {
+  Future<UserModel> signIn({
+    required String email,
+    required String password,
+  }) async {
+    // TODO: replace with real API call
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return UserModel(id: 'user_1', email: email);
+  }
+
+  Future<void> signOut() async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+}

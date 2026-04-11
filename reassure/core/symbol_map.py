@@ -187,11 +187,62 @@ def _extract_rust(root: Node, source: str, file: Path) -> list[Symbol]:
     Extract Rust functions, impl blocks, and struct definitions.
     Captures pub visibility and async markers.
     """
-    # TODO: implement
-    # Walk: function_item, impl_item, struct_item
-    # Check visibility_modifier for pub
-    # Track impl block for parent_class equivalent
-    raise NotImplementedError
+    symbols: list[Symbol] = []
+    # cursor = root.walk()  # reserved
+
+    def walk(node: Node, current_impl: str | None = None) -> None:
+        if node.type == "impl_item":
+            # impl TypeName { ... }
+            type_node = node.child_by_field_name("type")
+            impl_name = source[type_node.start_byte : type_node.end_byte] if type_node else None
+            for child in node.children:
+                walk(child, impl_name)
+            return
+
+        if node.type == "function_item":
+            vis = node.child_by_field_name("visibility")
+            is_pub = vis is not None and source[vis.start_byte : vis.end_byte].startswith("pub")
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                name = source[name_node.start_byte : name_node.end_byte]
+                kind = "method" if current_impl else "function"
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind=kind,
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="rust",
+                        parent_class=current_impl,
+                        is_public=is_pub,
+                    )
+                )
+            return
+
+        if node.type in ("struct_item", "enum_item"):
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                name = source[name_node.start_byte : name_node.end_byte]
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind="class",
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="rust",
+                        parent_class=None,
+                        is_public=True,
+                    )
+                )
+            return
+
+        for child in node.children:
+            walk(child, current_impl)
+
+    walk(root)
+    return symbols
 
 
 def _extract_typescript(root: Node, source: str, file: Path) -> list[Symbol]:

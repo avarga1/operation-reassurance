@@ -22,6 +22,7 @@ class FileRecord:
     imports: list[str] = field(default_factory=list)
     loc: int = 0
     is_test: bool = False
+    source: str | None = None  # cached source text, set during walk
 
 
 @dataclass
@@ -117,6 +118,7 @@ def walk_repo(
             symbols=symbols,
             loc=loc,
             is_test=is_test_file(path, root),
+            source=source,
         )
         index.files.append(record)
 
