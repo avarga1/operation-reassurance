@@ -12,3 +12,4 @@ coverage.xml
 reassure-report.json
 .DS_Store
 
+node_modules/
