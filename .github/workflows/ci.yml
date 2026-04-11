@@ -94,7 +94,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run reassure on itself
-        run: poetry run reassure . --output json -o reassure-report.json
+        run: poetry run reassure analyse . --output json -o reassure-report.json
 
       - name: Upload self-analysis report
         uses: actions/upload-artifact@v4
