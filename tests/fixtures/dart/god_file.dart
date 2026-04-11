@@ -457,3 +457,48 @@ Future<Directory> getApplicationDocumentsDirectory() async {
   final path = await channel.invokeMethod<String>('getApplicationDocumentsDirectory');
   return Directory(path!);
 }
+
+// ── padding to exceed LOC threshold ──────────────────────────────────────────
+// god_file.dart intentionally exceeds both the LOC and function-count
+// thresholds used in tests. Add stubs here if the file shrinks below 500 LOC.
+
+String _pad01() => 'pad';
+String _pad02() => 'pad';
+String _pad03() => 'pad';
+String _pad04() => 'pad';
+String _pad05() => 'pad';
+String _pad06() => 'pad';
+String _pad07() => 'pad';
+String _pad08() => 'pad';
+String _pad09() => 'pad';
+String _pad10() => 'pad';
+String _pad11() => 'pad';
+String _pad12() => 'pad';
+String _pad13() => 'pad';
+String _pad14() => 'pad';
+String _pad15() => 'pad';
+String _pad16() => 'pad';
+String _pad17() => 'pad';
+String _pad18() => 'pad';
+String _pad19() => 'pad';
+String _pad20() => 'pad';
+String _pad21() => 'pad';
+String _pad22() => 'pad';
+String _pad23() => 'pad';
+String _pad24() => 'pad';
+String _pad25() => 'pad';
+String _pad26() => 'pad';
+String _pad27() => 'pad';
+String _pad28() => 'pad';
+String _pad29() => 'pad';
+String _pad30() => 'pad';
+String _pad31() => 'pad';
+String _pad32() => 'pad';
+String _pad33() => 'pad';
+String _pad34() => 'pad';
+String _pad35() => 'pad';
+String _pad36() => 'pad';
+String _pad37() => 'pad';
+String _pad38() => 'pad';
+String _pad39() => 'pad';
+String _pad40() => 'pad';
