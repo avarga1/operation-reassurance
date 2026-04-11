@@ -26,11 +26,18 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
+from reassure.analyzers.dead_code import DeadCodeAnalyzer
 from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.folder_structure import _detect_default_rules as _detect_folder_rules
 from reassure.analyzers.folder_structure import _rules_from_toml as _folder_rules_from_toml
 from reassure.analyzers.folder_structure import check_new_file as check_new_folder_file
 from reassure.analyzers.observability import ObservabilityAnalyzer
+from reassure.analyzers.repo_rules import RepoRulesAnalyzer
+from reassure.analyzers.repo_rules import _detect_default_rules as _detect_repo_rules
+from reassure.analyzers.repo_rules import _rules_from_toml as _repo_rules_from_toml
+from reassure.analyzers.repo_rules import check_content as check_rule_content
+from reassure.analyzers.solid import SolidAnalyzer
 from reassure.analyzers.taxonomy import (
     TaxonomyAnalyzer,
     _detect_default_rules,
@@ -53,8 +60,12 @@ mcp = FastMCP(
 BUILTIN_ANALYZERS: list[Analyzer] = [
     CoverageAnalyzer(),
     ObservabilityAnalyzer(),
+    SolidAnalyzer(),
+    DeadCodeAnalyzer(),
+    RepoRulesAnalyzer(),
     TaxonomyAnalyzer(),
     FolderStructureAnalyzer(),
+    BlastRadiusAnalyzer(),
 ]
 
 
@@ -241,6 +252,79 @@ def check_folder_structure(path: str) -> dict:
             for v in violations
         ],
     }
+
+
+@mcp.tool(
+    name="get_dead_code",
+    description="Return public symbols that are defined but never referenced anywhere in the codebase.",
+)
+def get_dead_code(path: str) -> dict:
+    root = Path(path).expanduser().resolve()
+    if not root.is_dir():
+        return {"error": f"Not a directory: {path}"}
+    index = walk_repo(root)
+    result = DeadCodeAnalyzer().analyze(index)
+    return {"summary": result.summary, "dead": result.issues}
+
+
+@mcp.tool(
+    name="get_solid_issues",
+    description="Return god files, god classes, high-complexity functions, and SoC violations.",
+)
+def get_solid_issues(path: str) -> dict:
+    root = Path(path).expanduser().resolve()
+    if not root.is_dir():
+        return {"error": f"Not a directory: {path}"}
+    index = walk_repo(root)
+    result = SolidAnalyzer().analyze(index)
+    return {"summary": result.summary, "issues": result.issues}
+
+
+@mcp.tool(
+    name="check_repo_rules",
+    description=(
+        "Check whether proposed file content violates any repo rules (no mock data, "
+        "no hardcoded URLs, no print() in prod, etc). Call this BEFORE writing any file."
+    ),
+)
+def check_repo_rules(path: str, proposed_content: str) -> dict:
+    file_path = Path(path).expanduser().resolve()
+    root = _find_repo_root(file_path)
+    toml_path = root / ".reassure.toml" if root else None
+    if toml_path and toml_path.exists():
+        rules = _repo_rules_from_toml(toml_path)
+    elif root:
+        rules = _detect_repo_rules(root)
+    else:
+        rules = _detect_repo_rules(file_path.parent)
+    matches = check_rule_content(file_path, proposed_content, rules, root)
+    errors = [m for m in matches if m.rule.severity == "error"]
+    if not matches:
+        return {"blocked": False, "violations": []}
+    return {
+        "blocked": bool(errors),
+        "violations": [
+            {
+                "rule": m.rule.name,
+                "severity": m.rule.severity,
+                "file": str(m.file),
+                "line": m.line,
+                "matched": m.matched_content.strip(),
+                "message": m.rule.message,
+            }
+            for m in matches
+        ],
+    }
+
+
+@mcp.tool(
+    name="list_repo_rule_presets",
+    description="List available built-in repo rule presets (flutter, python, rust, general) and their rules.",
+)
+def list_repo_rule_presets() -> dict:
+    from reassure.analyzers.repo_rules import list_presets
+
+    return list_presets()
 
 
 def _find_repo_root(start: Path) -> Path | None:

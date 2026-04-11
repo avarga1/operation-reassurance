@@ -1,0 +1,54 @@
+import 'package:flutter/material.dart';
+
+import 'breakpoints.dart';
+
+/// Renders a different widget tree based on the MD3 window size class.
+///
+/// [compact] is required — phones in portrait.
+/// [medium] and [expanded] are optional — fall back to [compact] if omitted.
+///
+/// Uses [MediaQuery.sizeOf] (not .of().size) to only rebuild on size changes.
+///
+/// Usage:
+///   ResponsiveLayout(
+///     compact:  (_) => const PhoneScaffold(),
+///     medium:   (_) => const TabletScaffold(),
+///     expanded: (_) => const DesktopScaffold(),
+///   )
+class ResponsiveLayout extends StatelessWidget {
+  const ResponsiveLayout({
+    required this.compact,
+    this.medium,
+    this.expanded,
+    super.key,
+  });
+
+  final WidgetBuilder compact;
+  final WidgetBuilder? medium;
+  final WidgetBuilder? expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= Breakpoints.medium && expanded != null) return expanded!(context);
+    if (width >= Breakpoints.compact && medium != null) return medium!(context);
+    return compact(context);
+  }
+}
+
+/// Centers content and caps width at [Breakpoints.maxContentWidth].
+/// Use as the root of expanded-layout page bodies.
+class MaxWidthBox extends StatelessWidget {
+  const MaxWidthBox({required this.child, this.maxWidth = Breakpoints.maxContentWidth, super.key});
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: child,
+        ),
+      );
+}

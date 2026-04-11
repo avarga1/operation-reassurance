@@ -1,0 +1,42 @@
+import 'package:flutter/material.dart';
+
+import 'app_colors.dart';
+import 'app_typography.dart';
+
+/// Wires all token files into a [ThemeData].
+///
+/// Usage in main.dart / router:
+///   MaterialApp(
+///     theme:      AppTheme.light(),
+///     darkTheme:  AppTheme.dark(),
+///     themeMode:  ThemeMode.system,
+///   )
+///
+/// To change the palette: AppTheme.light(seed: Color(0xFF…))
+abstract final class AppTheme {
+  static ThemeData light({Color seed = AppColors.defaultSeed}) =>
+      _build(AppColors.light(seed: seed));
+
+  static ThemeData dark({Color seed = AppColors.defaultSeed}) =>
+      _build(AppColors.dark(seed: seed));
+
+  static ThemeData _build(ColorScheme scheme) => ThemeData(
+        useMaterial3: true,
+        colorScheme: scheme,
+        textTheme: AppTypography.textTheme.apply(
+          bodyColor: scheme.onSurface,
+          displayColor: scheme.onSurface,
+        ),
+        // Component-level defaults wired to tokens — add as needed
+        cardTheme: const CardTheme(
+          elevation: 1,
+          margin: EdgeInsets.zero,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      );
+}

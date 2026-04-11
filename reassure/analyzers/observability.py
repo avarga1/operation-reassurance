@@ -48,18 +48,36 @@ _PYTHON_OBS = {
 }
 
 _DART_OBS = {
+    # Logging
     "Logger",
     "_log",
     "log",
+    # Error capture
     "Sentry",
     "captureException",
     "captureMessage",
-    "tracer",
-    "span",
-    "FirebaseCrashlytics",
-    "FirebasePerformance",
     "recordError",
     "recordFlutterFatalError",
+    # Firebase
+    "FirebaseCrashlytics",
+    "FirebasePerformance",
+    # OTel Dart SDK (package:opentelemetry)
+    "tracer",
+    "span",
+    "startSpan",
+    "startActiveSpan",
+    "setAttribute",
+    "addEvent",
+    "recordException",
+    "globalTracerProvider",
+    "getTracer",
+    # Custom telemetry field conventions
+    "_telemetry",
+    "telemetry",
+    "recordClientWrite",
+    "recordClientRead",
+    "_recordOtelSpan",
+    "_otelSpan",
 }
 
 _RUST_OBS = {
@@ -204,7 +222,7 @@ def analyze_observability(
         lang_patterns = patterns.get(symbol.lang, set())
         body_node = _find_function_body(root, symbol)
 
-        if body_node is None or not _has_obs_call(body_node, source, lang_patterns):
+        if body_node is None or not _has_obs_call(body_node, source, lang_patterns, symbol.lang):
             gaps.append(ObservabilityGap(symbol=symbol, reason="completely dark"))
             dark += 1
         else:
@@ -256,13 +274,19 @@ def _body_of(node: Node, lang: str) -> Node | None:
         if node.type in ("function_definition", "async_function_definition"):
             return _first_child_of_type(node, "block")
     elif lang == "dart":
-        # method_signature is paired with a function_body sibling
+        # method_signature is a flat sibling of function_body inside class_body.
+        # We must find the function_body that immediately follows this node —
+        # not the first function_body in the class, which is the wrong one for
+        # any method except the first.
         if node.type in ("method_signature", "function_signature"):
             parent = node.parent
             if parent:
+                found = False
                 for sib in parent.children:
-                    if sib.type == "function_body":
+                    if found and sib.type == "function_body":
                         return sib
+                    if sib is node:
+                        found = True
         if node.type == "function_body":
             return node
     elif lang == "rust" and node.type == "function_item":
@@ -276,15 +300,21 @@ def _body_of(node: Node, lang: str) -> Node | None:
     return None
 
 
-def _has_obs_call(body: Node, source: str, patterns: set[str]) -> bool:
+def _has_obs_call(body: Node, source: str, patterns: set[str], lang: str = "") -> bool:
     """
     Return True if any call in the body matches an observability pattern.
     Excludes known dev-only calls (print, debugPrint, etc.).
+
+    Dart uses a completely different CST structure (expression_statement +
+    identifier + selector chains) vs Python/Rust/TS which use call nodes.
+    We route to a language-specific implementation for Dart.
     """
+    if lang == "dart":
+        return _has_obs_call_dart(body, source, patterns)
+
     for node in _iter_calls(body):
         name = _call_name(node, source)
         if name and name not in _EXCLUDED:
-            # Match if the call name starts with any pattern prefix
             for pattern in patterns:
                 if (
                     name == pattern
@@ -295,8 +325,48 @@ def _has_obs_call(body: Node, source: str, patterns: set[str]) -> bool:
     return False
 
 
+def _has_obs_call_dart(body: Node, source: str, patterns: set[str]) -> bool:
+    """
+    Dart-specific observability check.
+
+    Dart's tree-sitter grammar does not use 'call' nodes. Method calls are
+    represented as:
+      expression_statement
+        identifier          ← receiver (e.g. _telemetry, tracer)
+        selector
+          unconditional_assignable_selector
+            '.'
+            identifier      ← method name (e.g. recordClientWrite)
+        selector
+          argument_part     ← signals this is a call, not just an attribute read
+
+    We walk all identifiers in the body and check if any match an observability
+    pattern. This is slightly broader than call-only, but Dart's CST structure
+    makes precise call-only extraction complex and error-prone across versions.
+    """
+    for ident_text in _dart_body_identifiers(body, source):
+        if ident_text in _EXCLUDED:
+            continue
+        for pattern in patterns:
+            if (
+                ident_text == pattern
+                or ident_text.startswith(pattern + ".")
+                or ident_text.startswith(pattern + "_")
+            ):
+                return True
+    return False
+
+
+def _dart_body_identifiers(node: Node, source: str):
+    """Yield all identifier text values in a Dart body subtree."""
+    if node.type == "identifier":
+        yield _node_text(node, source)
+    for child in node.children:
+        yield from _dart_body_identifiers(child, source)
+
+
 def _iter_calls(node: Node):
-    """Yield all call nodes in a subtree."""
+    """Yield all call nodes in a subtree (Python / Rust / TS / JS)."""
     if node.type == "call":
         yield node
     for child in node.children:

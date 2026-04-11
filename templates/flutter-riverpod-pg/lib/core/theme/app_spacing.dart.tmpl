@@ -1,0 +1,64 @@
+import 'package:flutter/material.dart';
+
+/// 4-point base grid spacing scale.
+///
+/// Every value is a multiple of 4dp — the smallest unit that aligns cleanly
+/// on all Android and iOS screen densities (mdpi, hdpi, xhdpi, xxhdpi).
+/// Material Design 3, Apple HIG, and Tailwind all converge on this grid.
+///
+/// Usage:
+///   SizedBox(height: AppSpacing.md)         ✓
+///   SizedBox(height: 16)                    ✗  (triggers no-raw-sized-box-spacing)
+///   Padding(padding: AppSpacing.mdAll)      ✓
+///   padding: const EdgeInsets.all(16)       ✗  (triggers no-raw-edge-insets)
+abstract final class AppSpacing {
+  // ── scale ─────────────────────────────────────────────────────────────────
+  static const double xs   = 4;
+  static const double sm   = 8;
+  static const double sm2  = 12;
+  static const double md   = 16;
+  static const double lg   = 24;
+  static const double xl   = 32;
+  static const double xl2  = 40;
+  static const double xxl  = 48;
+  static const double xxxl = 64;
+
+  // ── symmetric EdgeInsets shortcuts ───────────────────────────────────────
+  static const EdgeInsets xsAll   = EdgeInsets.all(xs);
+  static const EdgeInsets smAll   = EdgeInsets.all(sm);
+  static const EdgeInsets mdAll   = EdgeInsets.all(md);
+  static const EdgeInsets lgAll   = EdgeInsets.all(lg);
+  static const EdgeInsets xlAll   = EdgeInsets.all(xl);
+
+  static const EdgeInsets mdH     = EdgeInsets.symmetric(horizontal: md);
+  static const EdgeInsets lgH     = EdgeInsets.symmetric(horizontal: lg);
+  static const EdgeInsets mdV     = EdgeInsets.symmetric(vertical: md);
+  static const EdgeInsets lgV     = EdgeInsets.symmetric(vertical: lg);
+  static const EdgeInsets mdInset = EdgeInsets.symmetric(horizontal: md, vertical: sm);
+  static const EdgeInsets lgInset = EdgeInsets.symmetric(horizontal: lg, vertical: md);
+
+  // ── page / screen padding ─────────────────────────────────────────────────
+  /// Standard horizontal page margin — 16dp compact, 24dp expanded.
+  static const EdgeInsets pageMobile  = EdgeInsets.symmetric(horizontal: md);
+  static const EdgeInsets pageTablet  = EdgeInsets.symmetric(horizontal: lg);
+  static const EdgeInsets pageDesktop = EdgeInsets.symmetric(horizontal: xxxl);
+
+  // ── SizedBox shorthands ───────────────────────────────────────────────────
+  static const Widget gapXs   = SizedBox(height: xs,   width: xs);
+  static const Widget gapSm   = SizedBox(height: sm,   width: sm);
+  static const Widget gapMd   = SizedBox(height: md,   width: md);
+  static const Widget gapLg   = SizedBox(height: lg,   width: lg);
+  static const Widget gapXl   = SizedBox(height: xl,   width: xl);
+
+  static const Widget hXs     = SizedBox(height: xs);
+  static const Widget hSm     = SizedBox(height: sm);
+  static const Widget hMd     = SizedBox(height: md);
+  static const Widget hLg     = SizedBox(height: lg);
+  static const Widget hXl     = SizedBox(height: xl);
+
+  static const Widget wXs     = SizedBox(width: xs);
+  static const Widget wSm     = SizedBox(width: sm);
+  static const Widget wMd     = SizedBox(width: md);
+  static const Widget wLg     = SizedBox(width: lg);
+  static const Widget wXl     = SizedBox(width: xl);
+}

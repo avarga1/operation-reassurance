@@ -1,26 +1,31 @@
 # {{project_name}}
 
-Stack: **{{template_key}}**
+## Repo rules (enforced by reassure)
 
-## Architecture rules
+This repo uses [operation-reassurance](https://github.com/avarga1/operation-reassurance)
+to enforce structural rules. A PreToolUse hook is active — **file writes that violate
+error-severity rules will be blocked automatically.**
 
-This project uses reassure taxonomy enforcement. Before writing to any file:
+### Before writing any file
 
-1. Call `get_symbol_map()` to see what already exists
-2. Call `get_blast_radius()` before touching shared symbols
-3. Respect the layer boundaries enforced by `.reassure.toml`
+Call the `check_repo_rules` MCP tool with the proposed path and content.
+Resolve all `error` violations before proceeding. `warning` violations should be
+fixed before merging but will not block the write.
 
-## Where things go
+### Key rules for this stack
 
-See `.reassure.toml` for the full ruleset. Short version:
+| Rule | Severity | What it catches |
+|------|----------|-----------------|
+| no-print-in-prod | error | `print()` in lib/ |
+| no-inline-mock-data | error | MockData/FakeData/testUser in prod |
+| no-hardcoded-urls | error | Inline http/https strings |
+| no-localhost | error | localhost/127.0.0.1 in prod |
+| no-hardcoded-colors | warning | `Colors.red`, `Color(0x…)` |
+| no-inline-text-style | warning | `TextStyle(fontSize:…)` |
+| no-imperative-navigation | warning | `Navigator.push` |
+| no-media-query-size | warning | `MediaQuery.of(context).size` |
+| no-raw-border-radius | warning | `BorderRadius.circular(…)` |
+| no-raw-edge-insets | warning | `EdgeInsets.symmetric(…)` |
+| no-raw-sized-box-spacing | warning | `SizedBox(height:…)` |
 
-- **UI** — screens/pages only. No business logic, no direct data access.
-- **Logic** — services, blocs, notifiers. No UI imports.
-- **Data** — repositories only. Owns all network and storage calls.
-- **Core** — constants, theme, utils. Keep it small. Lock files when done.
-
-## Do not
-
-- Add business logic to a screen/page
-- Import UI packages from a service or repository
-- Push past the LoC limits without a good reason — split the file instead
+Run `reassure .` for a full repo health report.
