@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /Users/austin/CONTRIBUTIONS/operatiom-reassurance
+PYTHONPATH=/Users/austin/CONTRIBUTIONS/operatiom-reassurance exec python3 -m reassure.mcp.server "$@"
