@@ -2,18 +2,14 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.dead_code import (
     DeadCodeAnalyzer,
-    DeadCodeReport,
     _build_reference_set,
     _is_dunder,
     analyze_dead_code,
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.core.symbol_map import Symbol
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

@@ -6,15 +6,12 @@ from pathlib import Path
 import pytest
 
 from reassure.analyzers.observability import (
-    DEFAULT_PATTERNS,
     _DART_OBS,
     _has_obs_call_dart,
-    _has_obs_call,
     analyze_observability,
 )
 from reassure.core.parser import parse_file
-from reassure.core.repo_walker import RepoIndex, walk_repo
-
+from reassure.core.repo_walker import walk_repo
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -101,11 +98,7 @@ class TestHasObsCallDart:
 
     def test_global_tracer_provider_detected(self):
         source = (
-            "class X {\n"
-            "  void init() {\n"
-            "    globalTracerProvider.getTracer('my-lib');\n"
-            "  }\n"
-            "}\n"
+            "class X {\n  void init() {\n    globalTracerProvider.getTracer('my-lib');\n  }\n}\n"
         )
         body, src = _dart_body_node(source)
         if body is None:
@@ -113,13 +106,7 @@ class TestHasObsCallDart:
         assert _has_obs_call_dart(body, src, _DART_OBS)
 
     def test_dark_function_not_detected(self):
-        source = (
-            "class X {\n"
-            "  void compute(int x) {\n"
-            "    return x * 2;\n"
-            "  }\n"
-            "}\n"
-        )
+        source = "class X {\n  void compute(int x) {\n    return x * 2;\n  }\n}\n"
         body, src = _dart_body_node(source)
         if body is None:
             pytest.skip("Dart parse failed")
@@ -127,26 +114,14 @@ class TestHasObsCallDart:
 
     def test_debug_print_alone_not_obs(self):
         """debugPrint is excluded — it's stripped in release builds."""
-        source = (
-            "class X {\n"
-            "  void log(String msg) {\n"
-            "    debugPrint(msg);\n"
-            "  }\n"
-            "}\n"
-        )
+        source = "class X {\n  void log(String msg) {\n    debugPrint(msg);\n  }\n}\n"
         body, src = _dart_body_node(source)
         if body is None:
             pytest.skip("Dart parse failed")
         assert not _has_obs_call_dart(body, src, _DART_OBS)
 
     def test_sentry_capture_detected(self):
-        source = (
-            "class X {\n"
-            "  void onError(Object e) {\n"
-            "    Sentry.captureException(e);\n"
-            "  }\n"
-            "}\n"
-        )
+        source = "class X {\n  void onError(Object e) {\n    Sentry.captureException(e);\n  }\n}\n"
         body, src = _dart_body_node(source)
         if body is None:
             pytest.skip("Dart parse failed")
@@ -182,11 +157,7 @@ class TestDartObservabilityAnalysis:
         dart_file = tmp_path / "lib" / "helper.dart"
         dart_file.parent.mkdir(parents=True)
         dart_file.write_text(
-            "class Helper {\n"
-            "  String format(String s) {\n"
-            "    return s.toUpperCase();\n"
-            "  }\n"
-            "}\n"
+            "class Helper {\n  String format(String s) {\n    return s.toUpperCase();\n  }\n}\n"
         )
         index = walk_repo(tmp_path)
         report = analyze_observability(index)

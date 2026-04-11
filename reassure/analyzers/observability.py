@@ -274,13 +274,19 @@ def _body_of(node: Node, lang: str) -> Node | None:
         if node.type in ("function_definition", "async_function_definition"):
             return _first_child_of_type(node, "block")
     elif lang == "dart":
-        # method_signature is paired with a function_body sibling
+        # method_signature is a flat sibling of function_body inside class_body.
+        # We must find the function_body that immediately follows this node —
+        # not the first function_body in the class, which is the wrong one for
+        # any method except the first.
         if node.type in ("method_signature", "function_signature"):
             parent = node.parent
             if parent:
+                found = False
                 for sib in parent.children:
-                    if sib.type == "function_body":
+                    if found and sib.type == "function_body":
                         return sib
+                    if sib is node:
+                        found = True
         if node.type == "function_body":
             return node
     elif lang == "rust" and node.type == "function_item":

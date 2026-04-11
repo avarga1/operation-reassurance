@@ -1,7 +1,6 @@
 """Integration tests for AuthService — hits a real DB."""
 
 import sqlalchemy  # noqa: F401 — import signals integration type to reassure
-
 from src.auth.service import AuthService
 
 
