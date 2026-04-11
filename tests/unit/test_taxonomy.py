@@ -2,22 +2,20 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.taxonomy import (
+    _FLUTTER_BLOC_RULES,
+    _FLUTTER_RIVERPOD_RULES,
     TaxonomyAnalyzer,
     TaxonomyRule,
-    analyze_taxonomy,
-    check_file,
     _extract_imports_from_source,
     _matching_rules,
-    _FLUTTER_RIVERPOD_RULES,
-    _FLUTTER_BLOC_RULES,
+    analyze_taxonomy,
+    check_file,
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_index(files: list[FileRecord]) -> RepoIndex:
     return RepoIndex(root=Path("/repo"), files=files)
@@ -43,6 +41,7 @@ def _py_file(name: str, loc: int, source: str = "") -> FileRecord:
 
 
 # ── import extraction ─────────────────────────────────────────────────────────
+
 
 class TestExtractImports:
     def test_dart_package_import(self):
@@ -77,6 +76,7 @@ class TestExtractImports:
 
 # ── pattern matching ──────────────────────────────────────────────────────────
 
+
 class TestPatternMatching:
     def test_page_dart_matches(self):
         rules = [TaxonomyRule(pattern="*_page.dart", purpose="test")]
@@ -98,6 +98,7 @@ class TestPatternMatching:
 
 
 # ── check_file (PreToolUse path) ──────────────────────────────────────────────
+
 
 class TestCheckFile:
     def test_clean_page_passes(self):
@@ -137,6 +138,7 @@ class TestCheckFile:
 
 
 # ── analyze_taxonomy (full index) ─────────────────────────────────────────────
+
 
 class TestAnalyzeTaxonomy:
     def test_phi_page_pattern_violation(self):
@@ -186,6 +188,7 @@ class TestAnalyzeTaxonomy:
 
 # ── TaxonomyAnalyzer (plugin protocol) ───────────────────────────────────────
 
+
 class TestTaxonomyAnalyzer:
     def test_result_has_correct_name(self):
         analyzer = TaxonomyAnalyzer()
@@ -224,6 +227,7 @@ class TestTaxonomyAnalyzer:
 
 
 # ── BLoC rules ────────────────────────────────────────────────────────────────
+
 
 class TestBlocRules:
     def test_bloc_with_ui_import_flagged(self):

@@ -1,11 +1,8 @@
 """Tests for reassure.init.detector."""
 
-import shutil
 from pathlib import Path
 
-import pytest
-
-from reassure.init.detector import detect, StackProfile
+from reassure.init.detector import detect
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -20,6 +17,7 @@ def _make_repo(tmp_path: Path, files: dict[str, str]) -> Path:
 
 
 # ── Flutter detection ─────────────────────────────────────────────────────────
+
 
 class TestFlutterDetection:
     def test_riverpod_detected(self, tmp_path):
@@ -36,9 +34,9 @@ class TestFlutterDetection:
 
     def test_pubspec_in_subdirectory(self, tmp_path):
         """Monorepo layout: frontend/pubspec.yaml"""
-        _make_repo(tmp_path, {
-            "frontend/pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text()
-        })
+        _make_repo(
+            tmp_path, {"frontend/pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text()}
+        )
         profile = detect(tmp_path)
         assert profile.frontend == "flutter"
         assert profile.state_management == "riverpod"
@@ -49,6 +47,7 @@ class TestFlutterDetection:
 
 
 # ── Backend detection ─────────────────────────────────────────────────────────
+
 
 class TestBackendDetection:
     def test_axum_detected(self, tmp_path):
@@ -64,6 +63,7 @@ class TestBackendDetection:
 
 # ── Database detection ────────────────────────────────────────────────────────
 
+
 class TestDatabaseDetection:
     def test_postgres_via_cargo(self, tmp_path):
         _make_repo(tmp_path, {"Cargo.toml": (FIXTURES / "cargo_axum.toml").read_text()})
@@ -76,22 +76,24 @@ class TestDatabaseDetection:
         assert profile.database == "postgres"
 
     def test_postgres_via_docker_compose(self, tmp_path):
-        _make_repo(tmp_path, {
-            "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n"
-        })
+        _make_repo(tmp_path, {"docker-compose.yml": "services:\n  db:\n    image: postgres:16\n"})
         profile = detect(tmp_path)
         assert profile.database == "postgres"
 
 
 # ── Template key resolution ───────────────────────────────────────────────────
 
+
 class TestTemplateKeyResolution:
     def test_flutter_riverpod_pg(self, tmp_path):
-        _make_repo(tmp_path, {
-            "pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text(),
-            "Cargo.toml": "# no axum here\n[package]\nname = 'x'\nversion='0.1.0'\nedition='2021'\n[dependencies]\n",
-            "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n",
-        })
+        _make_repo(
+            tmp_path,
+            {
+                "pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text(),
+                "Cargo.toml": "# no axum here\n[package]\nname = 'x'\nversion='0.1.0'\nedition='2021'\n[dependencies]\n",
+                "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n",
+            },
+        )
         profile = detect(tmp_path)
         # Flutter + Riverpod + Postgres → known template
         assert profile.frontend == "flutter"
@@ -106,23 +108,30 @@ class TestTemplateKeyResolution:
         assert profile.is_known is False
 
     def test_description_set_for_known_stack(self, tmp_path):
-        _make_repo(tmp_path, {
-            "pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text(),
-            "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n",
-        })
+        _make_repo(
+            tmp_path,
+            {
+                "pubspec.yaml": (FIXTURES / "pubspec_riverpod.yaml").read_text(),
+                "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n",
+            },
+        )
         profile = detect(tmp_path)
         assert "Riverpod" in profile.description or "riverpod" in profile.description.lower()
 
 
 # ── Warnings ──────────────────────────────────────────────────────────────────
 
+
 class TestWarnings:
     def test_getx_generates_warning(self, tmp_path):
-        _make_repo(tmp_path, {
-            "pubspec.yaml": (
-                "name: app\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'\n"
-                "dependencies:\n  flutter:\n    sdk: flutter\n  get: ^4.6.0\n"
-            )
-        })
+        _make_repo(
+            tmp_path,
+            {
+                "pubspec.yaml": (
+                    "name: app\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'\n"
+                    "dependencies:\n  flutter:\n    sdk: flutter\n  get: ^4.6.0\n"
+                )
+            },
+        )
         profile = detect(tmp_path)
         assert any("GetX" in w for w in profile.warnings)
