@@ -26,8 +26,10 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from reassure.analyzers.async_linter import AsyncLinter
 from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
 from reassure.analyzers.dead_code import DeadCodeAnalyzer
+from reassure.analyzers.duplication import DuplicationAnalyzer
 from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.folder_structure import _detect_default_rules as _detect_folder_rules
 from reassure.analyzers.folder_structure import _rules_from_toml as _folder_rules_from_toml
@@ -62,6 +64,8 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     ObservabilityAnalyzer(),
     SolidAnalyzer(),
     DeadCodeAnalyzer(),
+    DuplicationAnalyzer(),
+    AsyncLinter(),
     RepoRulesAnalyzer(),
     TaxonomyAnalyzer(),
     FolderStructureAnalyzer(),

@@ -20,8 +20,10 @@ from typing import Any
 import click
 from rich.console import Console
 
+from reassure.analyzers.async_linter import AsyncLinter
 from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
 from reassure.analyzers.dead_code import DeadCodeAnalyzer
+from reassure.analyzers.duplication import DuplicationAnalyzer
 from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.repo_rules import RepoRulesAnalyzer
@@ -35,6 +37,8 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     ObservabilityAnalyzer(),
     SolidAnalyzer(),
     DeadCodeAnalyzer(),
+    DuplicationAnalyzer(),
+    AsyncLinter(),
     RepoRulesAnalyzer(),
     TaxonomyAnalyzer(),
     FolderStructureAnalyzer(),
