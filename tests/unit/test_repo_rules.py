@@ -2,19 +2,15 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.repo_rules import (
     PRESETS,
-    RepoRule,
     RepoRulesAnalyzer,
+    _matches_glob,
     analyze_repo_rules,
     check_content,
     list_presets,
-    _matches_glob,
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

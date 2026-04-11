@@ -100,7 +100,9 @@ def main() -> None:
 
     # Print structured feedback the agent can read
     lines: list[str] = []
-    lines.append(f"reassure: {len(errors)} error(s), {len(warnings)} warning(s) in {file_path.name}")
+    lines.append(
+        f"reassure: {len(errors)} error(s), {len(warnings)} warning(s) in {file_path.name}"
+    )
     lines.append("")
 
     for m in matches:

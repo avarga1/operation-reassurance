@@ -22,47 +22,55 @@ class TestPreToolUseHook:
         assert result.returncode == 0
 
     def test_clean_dart_file_exits_0(self):
-        result = _run_hook({
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/repo/lib/auth.dart",
-                "content": "class AuthService {\n  void login() {}\n}\n",
-            },
-        })
+        result = _run_hook(
+            {
+                "tool_name": "Write",
+                "tool_input": {
+                    "file_path": "/repo/lib/auth.dart",
+                    "content": "class AuthService {\n  void login() {}\n}\n",
+                },
+            }
+        )
         assert result.returncode == 0
 
     def test_print_in_lib_exits_2(self):
-        result = _run_hook({
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/repo/lib/auth.dart",
-                "content": "void f() { print('debug'); }\n",
-            },
-        })
+        result = _run_hook(
+            {
+                "tool_name": "Write",
+                "tool_input": {
+                    "file_path": "/repo/lib/auth.dart",
+                    "content": "void f() { print('debug'); }\n",
+                },
+            }
+        )
         assert result.returncode == 2
         assert "no-print-in-prod" in result.stdout
         assert "Blocked" in result.stdout
 
     def test_warning_only_exits_0(self):
-        result = _run_hook({
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/repo/lib/widgets/chip.dart",
-                "content": "// TODO: clean this up\n",
-            },
-        })
+        result = _run_hook(
+            {
+                "tool_name": "Write",
+                "tool_input": {
+                    "file_path": "/repo/lib/widgets/chip.dart",
+                    "content": "// TODO: clean this up\n",
+                },
+            }
+        )
         assert result.returncode == 0
         assert "warning" in result.stdout
 
     def test_edit_new_string_checked(self):
-        result = _run_hook({
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "/repo/lib/services/api.dart",
-                "old_string": "final url = '';",
-                "new_string": "final url = 'https://api.example.com';",
-            },
-        })
+        result = _run_hook(
+            {
+                "tool_name": "Edit",
+                "tool_input": {
+                    "file_path": "/repo/lib/services/api.dart",
+                    "old_string": "final url = '';",
+                    "new_string": "final url = 'https://api.example.com';",
+                },
+            }
+        )
         assert result.returncode == 2
         assert "no-hardcoded-urls" in result.stdout
 
@@ -77,8 +85,10 @@ class TestPreToolUseHook:
         assert result.returncode == 0
 
     def test_empty_content_exits_0(self):
-        result = _run_hook({
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/repo/lib/a.dart", "content": ""},
-        })
+        result = _run_hook(
+            {
+                "tool_name": "Write",
+                "tool_input": {"file_path": "/repo/lib/a.dart", "content": ""},
+            }
+        )
         assert result.returncode == 0
