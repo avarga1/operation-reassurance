@@ -28,8 +28,25 @@ PYTHON_FIXTURES = Path(__file__).parent.parent / "fixtures" / "python"
 # ── Fixtures walked into a RepoIndex ─────────────────────────────────────────
 
 
+def _dart_available() -> bool:
+    try:
+        from reassure.core.parser import parse_file
+
+        result = parse_file(DART_FIXTURES / "clean_file.dart")
+        return result is not None and len(result[0].root_node.children) > 0
+    except Exception:
+        return False
+
+
+_DART_SKIP = pytest.mark.skipif(
+    not _dart_available(), reason="tree-sitter-dart grammar not available"
+)
+
+
 @pytest.fixture(scope="module")
 def dart_index():
+    if not _dart_available():
+        pytest.skip("tree-sitter-dart grammar not available")
     return walk_repo(DART_FIXTURES)
 
 

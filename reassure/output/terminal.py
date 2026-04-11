@@ -255,3 +255,54 @@ def render_folder_structure(report: FolderStructureReport, root: Path | None = N
             table.add_row("", "", f"[yellow italic]{v.rule.message}[/yellow italic]")
 
     console.print(Panel(table, title=str(title)))
+
+
+def render_repo_rules(report, root: "Path | None" = None) -> None:  # type: ignore[type-arg]
+    """Render repo rules violation report."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.text import Text
+
+    title = Text()
+    title.append("Repo Rules  ")
+    issues = report.issues if hasattr(report, "issues") else []
+    if issues:
+        errors = [i for i in issues if i.get("severity") == "error"]
+        warnings = [i for i in issues if i.get("severity") != "error"]
+        title.append(
+            f"{len(errors)} errors  {len(warnings)} warnings",
+            style="bold red" if errors else "bold yellow",
+        )
+    else:
+        title.append("clean", style="bold green")
+
+    if not issues:
+        console.print(Panel(Text("No rule violations ✓", style="bold green"), title=str(title)))
+        return
+
+    table = Table(show_header=True, header_style="bold cyan", border_style="dim", expand=True)
+    table.add_column("Severity", style="bold", no_wrap=True, width=8)
+    table.add_column("Rule", no_wrap=True)
+    table.add_column("File", style="dim", no_wrap=True)
+    table.add_column("Line", style="dim", no_wrap=True, width=5)
+    table.add_column("Match", no_wrap=False)
+
+    for issue in issues:
+        sev = issue.get("severity", "warning")
+        color = "red" if sev == "error" else "yellow"
+        try:
+            from pathlib import Path as _Path
+
+            fp = _Path(issue.get("file", ""))
+            file_display = str(fp.relative_to(root)) if root else str(fp)
+        except ValueError:
+            file_display = issue.get("file", "")
+        table.add_row(
+            f"[{color}]{sev}[/{color}]",
+            issue.get("rule", ""),
+            file_display,
+            str(issue.get("line", "")),
+            issue.get("matched", ""),
+        )
+
+    console.print(Panel(table, title=str(title)))
