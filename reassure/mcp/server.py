@@ -27,7 +27,12 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
-from reassure.analyzers.taxonomy import TaxonomyAnalyzer, check_file, _detect_default_rules, _rules_from_toml
+from reassure.analyzers.taxonomy import (
+    TaxonomyAnalyzer,
+    _detect_default_rules,
+    _rules_from_toml,
+    check_file,
+)
 from reassure.analyzers.test_coverage import CoverageAnalyzer
 from reassure.core.repo_walker import walk_repo
 from reassure.plugin import Analyzer

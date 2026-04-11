@@ -1,11 +1,8 @@
 """Tests for reassure.init.detector."""
 
-import shutil
 from pathlib import Path
 
-import pytest
-
-from reassure.init.detector import detect, StackProfile
+from reassure.init.detector import detect
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

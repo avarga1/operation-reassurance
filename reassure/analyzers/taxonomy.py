@@ -19,10 +19,11 @@ from __future__ import annotations
 
 import fnmatch
 import re
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+import tomllib
 
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.plugin import AnalyzerResult

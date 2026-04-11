@@ -188,8 +188,6 @@ def _extract_rust(root: Node, source: str, file: Path) -> list[Symbol]:
     Captures pub visibility and async markers.
     """
     symbols: list[Symbol] = []
-    cursor = root.walk()
-
     def walk(node: Node, current_impl: str | None = None) -> None:
         if node.type == "impl_item":
             # impl TypeName { ... }

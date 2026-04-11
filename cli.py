@@ -137,8 +137,8 @@ def init(
     rules_only: bool,
 ) -> None:
     """Scaffold a new project or install rules into an existing one."""
-    from reassure.init.detector import detect, KNOWN_TEMPLATES
-    from reassure.init.scaffolder import scaffold, install_rules, list_templates
+    from reassure.init.detector import KNOWN_TEMPLATES, detect
+    from reassure.init.scaffolder import install_rules, list_templates, scaffold
 
     target = target.resolve()
 
@@ -167,11 +167,10 @@ def init(
     if not name:
         name = click.prompt("  Project name")
 
-    if not stack:
-        if profile.is_known:
-            console.print(f"  [dim]Detected:[/dim] [bold]{profile.description}[/bold]")
-            use_detected = click.confirm(f"  Use {profile.template_key}?", default=True)
-            stack = profile.template_key if use_detected else None
+    if not stack and profile.is_known:
+        console.print(f"  [dim]Detected:[/dim] [bold]{profile.description}[/bold]")
+        use_detected = click.confirm(f"  Use {profile.template_key}?", default=True)
+        stack = profile.template_key if use_detected else None
 
     if not stack:
         choices = list_templates()
@@ -190,7 +189,7 @@ def init(
     console.print()
     console.print("  Next steps:")
     console.print(f"    cd {dest}")
-    console.print(f"    reassure analyse .")
+    console.print("    reassure analyse .")
 
 
 if __name__ == "__main__":

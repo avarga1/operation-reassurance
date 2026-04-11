@@ -8,7 +8,6 @@ in both file contents and file/directory names.
 from __future__ import annotations
 
 import re
-import shutil
 from pathlib import Path
 
 from reassure.init.detector import StackProfile

@@ -5,13 +5,12 @@ from pathlib import Path
 from reassure.analyzers.test_coverage import (
     CoverageReport,
     SymbolCoverage,
-    _build_test_reference_map,
     _collect_references,
     analyze_coverage,
 )
-from reassure.classifiers.test_type import TestClassification, TestType
+from reassure.classifiers.test_type import TestType
 from reassure.core.parser import parse_source
-from reassure.core.repo_walker import FileRecord, RepoIndex, walk_repo
+from reassure.core.repo_walker import walk_repo
 from reassure.core.symbol_map import Symbol
 
 FIXTURE = Path(__file__).parent.parent / "fixtures" / "sample_repo"

@@ -2,20 +2,17 @@
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.taxonomy import (
+    _FLUTTER_BLOC_RULES,
+    _FLUTTER_RIVERPOD_RULES,
     TaxonomyAnalyzer,
     TaxonomyRule,
-    analyze_taxonomy,
-    check_file,
     _extract_imports_from_source,
     _matching_rules,
-    _FLUTTER_RIVERPOD_RULES,
-    _FLUTTER_BLOC_RULES,
+    analyze_taxonomy,
+    check_file,
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 

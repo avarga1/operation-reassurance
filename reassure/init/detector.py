@@ -88,11 +88,10 @@ def _detect_flutter(root: Path, profile: StackProfile) -> None:
 
     try:
         import yaml  # type: ignore[import]
-        data = yaml.safe_load(pubspec.read_text())
+        yaml.safe_load(pubspec.read_text())
     except Exception:
         # Fall back to raw text scan if pyyaml not installed
         text = pubspec.read_text()
-        data = None
     else:
         text = pubspec.read_text()
 
