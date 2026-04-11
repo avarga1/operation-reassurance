@@ -150,8 +150,8 @@ class TestSolidAnalyzer:
 
     def test_clean_only_index_has_no_issues(self):
         # Build an index from only the clean files
+        from reassure.core.parser import detect_language, parse_file
         from reassure.core.repo_walker import FileRecord, RepoIndex
-        from reassure.core.parser import parse_file, detect_language
         from reassure.core.symbol_map import extract_symbols
 
         clean_dart = DART_FIXTURES / "clean_file.dart"

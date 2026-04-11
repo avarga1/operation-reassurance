@@ -10,7 +10,6 @@ import json
 import smtplib
 import sqlite3
 from datetime import datetime, timedelta
-from typing import Optional
 
 
 class UserManager:
@@ -31,7 +30,7 @@ class UserManager:
 
     # ── Auth ──────────────────────────────────────────────────────────────────
 
-    def login(self, email: str, password: str) -> Optional[str]:
+    def login(self, email: str, password: str) -> str | None:
         hashed = hashlib.sha256(password.encode()).hexdigest()
         row = self.db.execute(
             "SELECT id FROM users WHERE email=? AND password_hash=?", (email, hashed)
@@ -89,7 +88,7 @@ class UserManager:
         self._record_audit(user_id, "create")
         return user_id
 
-    def get_user(self, user_id: str) -> Optional[dict]:
+    def get_user(self, user_id: str) -> dict | None:
         row = self.db.execute(
             "SELECT id, email, name, created_at FROM users WHERE id=?", (user_id,)
         ).fetchone()
@@ -98,9 +97,7 @@ class UserManager:
         return {"id": row[0], "email": row[1], "name": row[2], "created_at": row[3]}
 
     def update_profile(self, user_id: str, name: str, email: str) -> bool:
-        self.db.execute(
-            "UPDATE users SET name=?, email=? WHERE id=?", (name, email, user_id)
-        )
+        self.db.execute("UPDATE users SET name=?, email=? WHERE id=?", (name, email, user_id))
         self.db.commit()
         self._record_audit(user_id, "update_profile")
         return True
@@ -119,11 +116,14 @@ class UserManager:
 
     def charge_user(self, user_id: str, amount_cents: int, description: str) -> bool:
         import urllib.request
-        payload = json.dumps({
-            "amount": amount_cents,
-            "currency": "usd",
-            "description": description,
-        }).encode()
+
+        payload = json.dumps(
+            {
+                "amount": amount_cents,
+                "currency": "usd",
+                "description": description,
+            }
+        ).encode()
         req = urllib.request.Request(
             "https://api.stripe.com/v1/charges",
             data=payload,
@@ -166,7 +166,7 @@ class UserManager:
 
     # ── Audit ─────────────────────────────────────────────────────────────────
 
-    def get_audit_log(self, user_id: Optional[str] = None) -> list[dict]:
+    def get_audit_log(self, user_id: str | None = None) -> list[dict]:
         if user_id:
             return [e for e in self._audit_log if e["user_id"] == user_id]
         return list(self._audit_log)
@@ -177,7 +177,7 @@ class UserManager:
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
-    def _get_by_email(self, email: str) -> Optional[dict]:
+    def _get_by_email(self, email: str) -> dict | None:
         row = self.db.execute(
             "SELECT id, email, name FROM users WHERE email=?", (email,)
         ).fetchone()
@@ -189,8 +189,10 @@ class UserManager:
             server.sendmail("noreply@example.com", to, msg)
 
     def _record_audit(self, user_id: str, action: str) -> None:
-        self._audit_log.append({
-            "user_id": user_id,
-            "action": action,
-            "timestamp": datetime.now(),
-        })
+        self._audit_log.append(
+            {
+                "user_id": user_id,
+                "action": action,
+                "timestamp": datetime.now(),
+            }
+        )

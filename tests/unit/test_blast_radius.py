@@ -10,16 +10,12 @@ Tests the three core operations independently:
 
 from pathlib import Path
 
-import pytest
-
 from reassure.analyzers.blast_radius import (
     AffectedSymbol,
     BlastRadiusReport,
     analyze_blast_radius,
-    build_reference_graph,
     parse_diff,
     symbols_in_hunks,
-    transitive_callers,
 )
 from reassure.core.repo_walker import FileRecord, RepoIndex
 from reassure.core.symbol_map import Symbol
@@ -73,12 +69,7 @@ class TestParseDiff:
         assert end == 16  # 10 + 7 - 1
 
     def test_multiple_files(self):
-        diff = (
-            "+++ b/src/auth.py\n"
-            "@@ -1,3 +1,4 @@\n"
-            "+++ b/src/user.py\n"
-            "@@ -5,2 +5,3 @@\n"
-        )
+        diff = "+++ b/src/auth.py\n@@ -1,3 +1,4 @@\n+++ b/src/user.py\n@@ -5,2 +5,3 @@\n"
         result = parse_diff(diff, Path("/repo"))
         assert Path("/repo/src/auth.py") in result
         assert Path("/repo/src/user.py") in result
@@ -88,20 +79,14 @@ class TestParseDiff:
 
     def test_deletion_only_hunk_skipped(self):
         # @@ -10,3 +10,0 @@ — count=0 means pure deletion, skip
-        diff = (
-            "+++ b/src/auth.py\n"
-            "@@ -10,3 +10,0 @@\n"
-        )
+        diff = "+++ b/src/auth.py\n@@ -10,3 +10,0 @@\n"
         result = parse_diff(diff, Path("/repo"))
         # File present but hunk has count=0, so no ranges
         assert result.get(Path("/repo/src/auth.py"), []) == []
 
     def test_single_line_hunk(self):
         # @@ -5 +5 @@ — no comma means count defaults to 1
-        diff = (
-            "+++ b/src/auth.py\n"
-            "@@ -5 +5 @@\n"
-        )
+        diff = "+++ b/src/auth.py\n@@ -5 +5 @@\n"
         result = parse_diff(diff, Path("/repo"))
         hunks = result.get(Path("/repo/src/auth.py"), [])
         assert hunks == [(5, 5)]
@@ -222,10 +207,18 @@ class TestBlastRadiusReport:
 
         sym = _sym("foo", "src/foo.py", 1, 10)
         callers = [
-            CallerRef(symbol=_sym(f"caller_{i}", "src/bar.py", i, i + 5), file=FIXTURE_ROOT / "src/bar.py", is_covered=False)
+            CallerRef(
+                symbol=_sym(f"caller_{i}", "src/bar.py", i, i + 5),
+                file=FIXTURE_ROOT / "src/bar.py",
+                is_covered=False,
+            )
             for i in range(uncovered_count)
         ] + [
-            CallerRef(symbol=_sym(f"covered_{i}", "src/baz.py", i, i + 5), file=FIXTURE_ROOT / "src/baz.py", is_covered=True)
+            CallerRef(
+                symbol=_sym(f"covered_{i}", "src/baz.py", i, i + 5),
+                file=FIXTURE_ROOT / "src/baz.py",
+                is_covered=True,
+            )
             for i in range(covered_count)
         ]
         return AffectedSymbol(symbol=sym, direct_callers=callers)
