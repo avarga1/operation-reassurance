@@ -248,12 +248,127 @@ def _extract_rust(root: Node, source: str, file: Path) -> list[Symbol]:
 def _extract_typescript(root: Node, source: str, file: Path) -> list[Symbol]:
     """
     Extract TypeScript/TSX functions, classes, and methods.
-    Handles arrow functions assigned to const declarations.
+    Handles:
+      - function_declaration / async function_declaration
+      - class_declaration (+ abstract_class_declaration)
+      - method_definition inside class bodies
+      - const/let arrow functions: lexical_declaration -> variable_declarator -> arrow_function
+      - export_statement wrappers around any of the above
     """
-    # TODO: implement
-    # Walk: function_declaration, method_definition, class_declaration
-    # Also: lexical_declaration -> arrow_function (const foo = () => ...)
-    raise NotImplementedError
+    symbols: list[Symbol] = []
+
+    def walk(node: Node, parent_class: str | None = None) -> None:
+        t = node.type
+
+        # Unwrap export statements transparently
+        if t == "export_statement":
+            decl = node.child_by_field_name("declaration")
+            if decl:
+                walk(decl, parent_class)
+            else:
+                for child in node.children:
+                    walk(child, parent_class)
+            return
+
+        if t in ("class_declaration", "abstract_class_declaration"):
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                name = _node_text(name_node, source)
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind="class",
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="typescript",
+                        is_public=True,
+                        parent_class=parent_class,
+                    )
+                )
+                body = node.child_by_field_name("body")
+                if body:
+                    walk(body, parent_class=name)
+            return
+
+        if t == "class_body":
+            for child in node.children:
+                walk(child, parent_class)
+            return
+
+        if t == "method_definition":
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                name = _node_text(name_node, source)
+                if not name.startswith("#"):  # skip private fields (#foo)
+                    is_async = any(c.type == "async" for c in node.children)
+                    symbols.append(
+                        Symbol(
+                            name=name,
+                            kind="method",
+                            file=file,
+                            line_start=node.start_point[0] + 1,
+                            line_end=node.end_point[0] + 1,
+                            lang="typescript",
+                            parent_class=parent_class,
+                            is_async=is_async,
+                            is_public=not name.startswith("_"),
+                        )
+                    )
+            return
+
+        if t in ("function_declaration", "generator_function_declaration"):
+            name_node = node.child_by_field_name("name")
+            if name_node:
+                name = _node_text(name_node, source)
+                is_async = any(c.type == "async" for c in node.children)
+                kind = "method" if parent_class else "function"
+                symbols.append(
+                    Symbol(
+                        name=name,
+                        kind=kind,
+                        file=file,
+                        line_start=node.start_point[0] + 1,
+                        line_end=node.end_point[0] + 1,
+                        lang="typescript",
+                        parent_class=parent_class,
+                        is_async=is_async,
+                        is_public=not name.startswith("_"),
+                    )
+                )
+            return
+
+        # const foo = () => ... / const foo = async () => ...
+        if t == "lexical_declaration":
+            for child in node.children:
+                if child.type == "variable_declarator":
+                    name_node = child.child_by_field_name("name")
+                    val = child.child_by_field_name("value")
+                    if name_node and val and val.type == "arrow_function":
+                        name = _node_text(name_node, source)
+                        is_async = any(c.type == "async" for c in val.children)
+                        kind = "method" if parent_class else "function"
+                        symbols.append(
+                            Symbol(
+                                name=name,
+                                kind=kind,
+                                file=file,
+                                line_start=child.start_point[0] + 1,
+                                line_end=child.end_point[0] + 1,
+                                lang="typescript",
+                                parent_class=parent_class,
+                                is_async=is_async,
+                                is_public=not name.startswith("_"),
+                            )
+                        )
+            return
+
+        # Default: recurse
+        for child in node.children:
+            walk(child, parent_class)
+
+    walk(root)
+    return symbols
 
 
 def _extract_javascript(root: Node, source: str, file: Path) -> list[Symbol]:
