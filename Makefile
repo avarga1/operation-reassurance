@@ -16,7 +16,9 @@ fix:
 	python3 -m ruff format reassure/ cli.py
 
 # Start FastAPI backend (port 7474)
+# Loads .env.local if present (contains KAI_API_KEY_HASH etc — never committed)
 api:
+	@set -a; [ -f .env.local ] && . ./.env.local; set +a; \
 	PYTHONPATH=$(shell pwd) uvicorn reassure.api.server:app --reload --port 7474
 
 # Start TSX GUI dev server (port 5173, proxies /api → 7474)
