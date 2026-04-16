@@ -98,6 +98,10 @@ export const api = {
   analyze: (path: string, analyzers = ["coverage", "observability", "solid"]) =>
     request<AnalyzeResult>("POST", "/analyze", { path, analyzers }),
 
+  /** Analyze multiple repo paths in one call. Returns one AnalyzeResult per path. */
+  analyzeMulti: (paths: string[], analyzers = ["coverage", "observability", "solid"]) =>
+    request<AnalyzeResult[]>("POST", "/analyze-multi", { paths, analyzers }),
+
   blastRadius: (path: string, base = "main", transitive_depth = 2) =>
     request<BlastRadiusResult>("POST", "/blast-radius", { path, base, transitive_depth }),
 

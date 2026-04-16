@@ -164,8 +164,10 @@ def _find_clone_groups(index: RepoIndex) -> tuple[list[CloneGroup], int]:
                 continue
 
             normalized = _normalize_body(body)
-            if len(normalized) < 10:
-                # Trivially short — skip (e.g. `pass` or empty body)
+            body_line_count = sym.line_end - sym.line_start + 1
+            if body_line_count < 3 or len(normalized) < 60:
+                # Trivially short — skip single-expression overrides, getters,
+                # lifecycle stubs (createState, dispose, build, toString, etc.)
                 continue
 
             fp = _fingerprint(normalized)

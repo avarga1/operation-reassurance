@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
-from reassure.core.repo_walker import walk_repo
+from reassure.core.repo_walker import walk_repo, walk_repos
 
 try:
     from reassure.analyzers.blast_radius import analyze_blast_radius, get_diff, parse_diff
@@ -81,6 +81,11 @@ class ConfigWriteRequest(BaseModel):
     config: dict[str, Any]
 
 
+class MultiAnalyzeRequest(BaseModel):
+    paths: list[str]
+    analyzers: list[str] = ["coverage", "observability", "solid"]
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
@@ -118,6 +123,37 @@ def analyze(req: AnalyzeRequest) -> dict:
             results["analyzers"][name] = {"error": str(e), "trace": traceback.format_exc()}
 
     return results
+
+
+@app.post("/analyze-multi")
+def analyze_multi(req: MultiAnalyzeRequest) -> list[dict]:
+    """Run analyzers against multiple repo paths and return one result per path."""
+    roots = [_resolve(p) for p in req.paths]
+    indexes = walk_repos(roots)
+
+    out = []
+    for root, index in zip(roots, indexes, strict=True):
+        result: dict[str, Any] = {
+            "path": str(root),
+            "files": len(index.files),
+            "symbols": len(index.all_symbols),
+            "test_files": len(index.test_files),
+            "languages": _lang_breakdown(index),
+            "analyzers": {},
+        }
+        for name in req.analyzers:
+            analyzer = _ANALYZERS.get(name)
+            if analyzer is None:
+                result["analyzers"][name] = {"error": f"Unknown analyzer: {name}"}
+                continue
+            try:
+                r = analyzer.analyze(index)
+                result["analyzers"][name] = {"summary": r.summary, "issues": r.issues}
+            except Exception as e:
+                result["analyzers"][name] = {"error": str(e), "trace": traceback.format_exc()}
+        out.append(result)
+
+    return out
 
 
 @app.post("/blast-radius")

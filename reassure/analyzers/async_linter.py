@@ -95,8 +95,7 @@ class AsyncLinter:
 
     name = "async"
     description = (
-        "Finds async functions that never await, unawaited Futures, "
-        "and await-without-async bugs."
+        "Finds async functions that never await, unawaited Futures, and await-without-async bugs."
     )
 
     def analyze(self, index: RepoIndex) -> AnalyzerResult:
@@ -114,10 +113,7 @@ class AsyncLinter:
         flagged = len({(str(i.symbol.file), i.symbol.name) for i in report.issues})
         return AnalyzerResult(
             name=self.name,
-            summary=(
-                f"{report.total_async_functions} async functions — "
-                f"{flagged} with issues"
-            ),
+            summary=(f"{report.total_async_functions} async functions — {flagged} with issues"),
             data=report,
             issues=issues,
         )
