@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConfig } from "@/hooks/useAnalysis";
 import { useRepoPath } from "@/components/RepoSelector";
+import { useKaiAuth } from "@/hooks/useKaiAuth";
 import { api } from "@/api/client";
 
 export function Settings() {
@@ -34,6 +35,8 @@ export function Settings() {
       queryClient.invalidateQueries({ queryKey: ["analysis", path] });
     },
   });
+
+  const kai = useKaiAuth();
 
   if (!path) return <Empty />;
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading config…</div>;
@@ -89,6 +92,89 @@ export function Settings() {
           <span className="text-xs text-green-600">Saved. Re-run analysis to apply.</span>
         )}
       </div>
+
+      {/* ── Kai Studio ─────────────────────────────────────────────────── */}
+      <div className="mt-8">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Kai Studio
+        </h2>
+        <KaiKeyField kai={kai} />
+      </div>
+    </div>
+  );
+}
+
+function KaiKeyField({ kai }: { kai: ReturnType<typeof useKaiAuth> }) {
+  const [draft, setDraft] = useState("");
+  const [editing, setEditing] = useState(false);
+
+  const statusLabel: Record<string, string> = {
+    idle: "Not connected",
+    verifying: "Verifying…",
+    valid: "Connected",
+    invalid: "Invalid key",
+    unconfigured: "Not available on this server",
+  };
+  const statusColor: Record<string, string> = {
+    valid: "text-green-600",
+    invalid: "text-destructive",
+    unconfigured: "text-amber-600",
+  };
+
+  return (
+    <div className="border border-border divide-y divide-border mb-6">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div>
+          <div className="text-sm font-medium">API Key</div>
+          <div className={`text-xs mt-0.5 ${statusColor[kai.status] ?? "text-muted-foreground"}`}>
+            {statusLabel[kai.status]}
+            {kai.status === "valid" && kai.studioUrl && (
+              <span className="text-muted-foreground"> · {kai.studioUrl}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {kai.status === "valid" ? (
+            <button
+              className="text-xs text-destructive hover:underline"
+              onClick={kai.clear}
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              onClick={() => setEditing((v) => !v)}
+            >
+              {editing ? "Cancel" : "Enter key"}
+            </button>
+          )}
+        </div>
+      </div>
+      {editing && kai.status !== "valid" && (
+        <div className="px-4 py-3 flex gap-2">
+          <input
+            type="password"
+            autoFocus
+            placeholder="Paste your Kai API key"
+            className="flex-1 text-sm font-mono bg-background border border-border px-3 py-1.5 outline-none focus:ring-1 focus:ring-ring"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && draft.trim()) {
+                kai.verify(draft.trim()).then(() => setEditing(false));
+              }
+            }}
+          />
+          <button
+            className="text-sm border border-border px-3 py-1.5 hover:bg-accent/50 transition-colors disabled:opacity-40"
+            disabled={!draft.trim() || kai.status === "verifying"}
+            onClick={() => kai.verify(draft.trim()).then(() => setEditing(false))}
+          >
+            {kai.status === "verifying" ? "…" : "Verify"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

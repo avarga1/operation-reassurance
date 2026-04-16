@@ -6,7 +6,7 @@ import {
   ShieldAlert,
   Zap,
   Settings,
-  Search,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RepoSelector } from "@/components/RepoSelector";
@@ -17,6 +17,10 @@ const NAV = [
   { to: "/observability", icon: Eye, label: "Observability" },
   { to: "/solid", icon: ShieldAlert, label: "SOLID" },
   { to: "/blast-radius", icon: Zap, label: "Blast Radius" },
+];
+
+const NAV_DEVELOP = [
+  { to: "/develop", icon: Code2, label: "Develop" },
 ];
 
 export function Layout() {
@@ -55,6 +59,27 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Develop — pinned above settings */}
+        <div className="px-3 py-2 border-t border-border">
+          {NAV_DEVELOP.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2.5 px-3 py-1.5 text-[13px] transition-colors",
+                  isActive
+                    ? "bg-accent text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                )
+              }
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
 
         {/* Settings pinned to bottom */}
         <div className="px-3 py-2 border-t border-border">

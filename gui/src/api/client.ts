@@ -118,4 +118,10 @@ export const api = {
     request<{ written: boolean }>("PUT", "/config", { path, config }),
 
   health: () => request<{ status: string }>("GET", "/health"),
+
+  verifyKaiKey: (key: string) =>
+    request<{ valid: boolean; studio_url: string }>("POST", "/kai/verify", { key }),
+
+  kaiStatus: () =>
+    request<{ configured: boolean; studio_url: string | null }>("GET", "/kai/status"),
 };
