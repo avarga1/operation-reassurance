@@ -5,6 +5,7 @@ import { Coverage } from "@/pages/Coverage";
 import { Observability } from "@/pages/Observability";
 import { Solid } from "@/pages/Solid";
 import { BlastRadius } from "@/pages/BlastRadius";
+import { Develop } from "@/pages/Develop";
 import { Settings } from "@/pages/Settings";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="observability" element={<Observability />} />
         <Route path="solid" element={<Solid />} />
         <Route path="blast-radius" element={<BlastRadius />} />
+        <Route path="develop" element={<Develop />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

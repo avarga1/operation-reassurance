@@ -2,14 +2,15 @@
 CLI entry point for operation-reassurance.
 
 Usage:
-  reassure ./src                        # full analysis, terminal output
-  reassure ./src --only coverage        # single analyzer
-  reassure ./src --output json          # JSON to stdout
+  reassure ./src                             # full analysis, terminal output
+  reassure ./src ./other                     # analyse multiple repos at once
+  reassure ./src --only coverage             # single analyzer
+  reassure ./src --output json               # JSON to stdout
   reassure ./src --output json -o report.json
 
-  reassure init                         # scaffold a new project (interactive)
+  reassure init                              # scaffold a new project (interactive)
   reassure init --name my-app --path ./my-app --stack flutter-riverpod-pg
-  reassure init --path ./existing-repo  # detect stack, install rules only
+  reassure init --path ./existing-repo       # detect stack, install rules only
 """
 
 import json
@@ -20,8 +21,10 @@ from typing import Any
 import click
 from rich.console import Console
 
+from reassure.analyzers.async_linter import AsyncLinter
 from reassure.analyzers.blast_radius import BlastRadiusAnalyzer
 from reassure.analyzers.dead_code import DeadCodeAnalyzer
+from reassure.analyzers.duplication import DuplicationAnalyzer
 from reassure.analyzers.folder_structure import FolderStructureAnalyzer
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.repo_rules import RepoRulesAnalyzer
@@ -35,6 +38,8 @@ BUILTIN_ANALYZERS: list[Analyzer] = [
     ObservabilityAnalyzer(),
     SolidAnalyzer(),
     DeadCodeAnalyzer(),
+    DuplicationAnalyzer(),
+    AsyncLinter(),
     RepoRulesAnalyzer(),
     TaxonomyAnalyzer(),
     FolderStructureAnalyzer(),
@@ -55,7 +60,9 @@ def main() -> None:
 
 
 @main.command("analyse")
-@click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path))
+@click.argument(
+    "paths", nargs=-1, required=True, type=click.Path(exists=True, file_okay=False, path_type=Path)
+)
 @click.option(
     "--only",
     type=click.Choice(ANALYZER_NAMES),
@@ -85,14 +92,14 @@ def main() -> None:
 )
 @click.option("--show-passed", is_flag=True, default=False, help="Show covered symbols too.")
 def analyse(
-    path: Path,
+    paths: tuple[Path, ...],
     only: tuple[str, ...],
     output: str,
     out: Path | None,
     config: Path | None,
     show_passed: bool,
 ) -> None:
-    """Analyze repo health at PATH using static CST/AST analysis."""
+    """Analyze repo health at one or more PATHs using static CST/AST analysis."""
     from reassure.core.repo_walker import walk_repo
 
     analyzers = list(BUILTIN_ANALYZERS)
@@ -105,32 +112,44 @@ def analyse(
 
     run_names = set(only) if only else {a.name for a in analyzers}
 
-    with console.status(f"[bold cyan]Walking {path} …"):
-        index = walk_repo(path)
+    # Build one index per path, then run analyzers over each.
+    all_results: dict[str, Any] = {}
 
-    console.print(
-        f"  [dim]{len(index.files)} files[/dim]  "
-        f"[dim]{len(index.all_symbols)} symbols[/dim]  "
-        f"[dim]{len(index.test_files)} test files[/dim]"
-    )
+    for path in paths:
+        with console.status(f"[bold cyan]Walking {path} …"):
+            index = walk_repo(path)
 
-    results: dict[str, Any] = {}
+        if len(paths) > 1:
+            console.rule(f"[bold]{path}[/bold]")
 
-    for analyzer in analyzers:
-        if analyzer.name not in run_names:
-            continue
-        with console.status(f"[cyan]Running {analyzer.name} …"):
-            result = analyzer.analyze(index)
-        if output == "terminal":
-            analyzer.render_terminal(result, root=path)
-        else:
-            results[analyzer.name] = {
-                "summary": result.summary,
-                "issues": result.issues,
-            }
+        console.print(
+            f"  [dim]{len(index.files)} files[/dim]  "
+            f"[dim]{len(index.all_symbols)} symbols[/dim]  "
+            f"[dim]{len(index.test_files)} test files[/dim]"
+        )
+
+        path_results: dict[str, Any] = {}
+
+        for analyzer in analyzers:
+            if analyzer.name not in run_names:
+                continue
+            with console.status(f"[cyan]Running {analyzer.name} …"):
+                result = analyzer.analyze(index)
+            if output == "terminal":
+                analyzer.render_terminal(result, root=path)
+            else:
+                path_results[analyzer.name] = {
+                    "summary": result.summary,
+                    "issues": result.issues,
+                }
+
+        if output != "terminal":
+            all_results[str(path)] = path_results
 
     if output == "json" or out:
-        payload = json.dumps(results, indent=2, default=str)
+        # Unwrap single-path results to preserve backward-compatible shape.
+        payload_data = all_results if len(paths) > 1 else next(iter(all_results.values()), {})
+        payload = json.dumps(payload_data, indent=2, default=str)
         if out:
             out.write_text(payload)
             console.print(f"[green]Written to {out}[/green]")

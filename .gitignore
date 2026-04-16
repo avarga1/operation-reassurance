@@ -11,3 +11,4 @@ coverage.xml
 .coverage
 reassure-report.json
 .DS_Store
+.env.local

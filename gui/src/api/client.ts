@@ -98,6 +98,10 @@ export const api = {
   analyze: (path: string, analyzers = ["coverage", "observability", "solid"]) =>
     request<AnalyzeResult>("POST", "/analyze", { path, analyzers }),
 
+  /** Analyze multiple repo paths in one call. Returns one AnalyzeResult per path. */
+  analyzeMulti: (paths: string[], analyzers = ["coverage", "observability", "solid"]) =>
+    request<AnalyzeResult[]>("POST", "/analyze-multi", { paths, analyzers }),
+
   blastRadius: (path: string, base = "main", transitive_depth = 2) =>
     request<BlastRadiusResult>("POST", "/blast-radius", { path, base, transitive_depth }),
 
@@ -114,4 +118,10 @@ export const api = {
     request<{ written: boolean }>("PUT", "/config", { path, config }),
 
   health: () => request<{ status: string }>("GET", "/health"),
+
+  verifyKaiKey: (key: string) =>
+    request<{ valid: boolean; studio_url: string }>("POST", "/kai/verify", { key }),
+
+  kaiStatus: () =>
+    request<{ configured: boolean; studio_url: string | null }>("GET", "/kai/status"),
 };

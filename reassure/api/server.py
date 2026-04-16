@@ -18,6 +18,8 @@ Run:
 
 from __future__ import annotations
 
+import hashlib
+import os
 import subprocess
 import traceback
 from pathlib import Path
@@ -29,7 +31,7 @@ from pydantic import BaseModel
 
 from reassure.analyzers.observability import ObservabilityAnalyzer
 from reassure.analyzers.test_coverage import CoverageAnalyzer
-from reassure.core.repo_walker import walk_repo
+from reassure.core.repo_walker import walk_repo, walk_repos
 
 try:
     from reassure.analyzers.blast_radius import analyze_blast_radius, get_diff, parse_diff
@@ -81,6 +83,15 @@ class ConfigWriteRequest(BaseModel):
     config: dict[str, Any]
 
 
+class MultiAnalyzeRequest(BaseModel):
+    paths: list[str]
+    analyzers: list[str] = ["coverage", "observability", "solid"]
+
+
+class KaiVerifyRequest(BaseModel):
+    key: str
+
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
@@ -118,6 +129,37 @@ def analyze(req: AnalyzeRequest) -> dict:
             results["analyzers"][name] = {"error": str(e), "trace": traceback.format_exc()}
 
     return results
+
+
+@app.post("/analyze-multi")
+def analyze_multi(req: MultiAnalyzeRequest) -> list[dict]:
+    """Run analyzers against multiple repo paths and return one result per path."""
+    roots = [_resolve(p) for p in req.paths]
+    indexes = walk_repos(roots)
+
+    out = []
+    for root, index in zip(roots, indexes, strict=True):
+        result: dict[str, Any] = {
+            "path": str(root),
+            "files": len(index.files),
+            "symbols": len(index.all_symbols),
+            "test_files": len(index.test_files),
+            "languages": _lang_breakdown(index),
+            "analyzers": {},
+        }
+        for name in req.analyzers:
+            analyzer = _ANALYZERS.get(name)
+            if analyzer is None:
+                result["analyzers"][name] = {"error": f"Unknown analyzer: {name}"}
+                continue
+            try:
+                r = analyzer.analyze(index)
+                result["analyzers"][name] = {"summary": r.summary, "issues": r.issues}
+            except Exception as e:
+                result["analyzers"][name] = {"error": str(e), "trace": traceback.format_exc()}
+        out.append(result)
+
+    return out
 
 
 @app.post("/blast-radius")
@@ -246,6 +288,38 @@ def put_config(req: ConfigWriteRequest) -> dict:
         return {"written": True, "path": str(config_path)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to write config: {e}") from e
+
+
+# ── Kai Studio ────────────────────────────────────────────────────────────────
+
+_KAI_KEY_HASH = os.environ.get("KAI_API_KEY_HASH", "")
+_KAI_STUDIO_URL = os.environ.get("KAI_STUDIO_URL", "https://10.0.0.253:8443")
+
+
+@app.post("/kai/verify")
+def kai_verify(req: KaiVerifyRequest) -> dict:
+    """
+    Verify a KAI Studio API key.
+
+    Configure server-side by setting:
+      KAI_API_KEY_HASH  — SHA-256 hex digest of the valid key
+      KAI_STUDIO_URL    — code-server base URL (default: https://10.0.0.253:8443)
+    """
+    if not _KAI_KEY_HASH:
+        raise HTTPException(status_code=503, detail="KAI Studio not configured on this server.")
+    digest = hashlib.sha256(req.key.strip().encode()).hexdigest()
+    if digest != _KAI_KEY_HASH:
+        raise HTTPException(status_code=401, detail="Invalid API key.")
+    return {"valid": True, "studio_url": _KAI_STUDIO_URL}
+
+
+@app.get("/kai/status")
+def kai_status() -> dict:
+    """Returns whether KAI Studio is configured (never exposes the key/hash)."""
+    return {
+        "configured": bool(_KAI_KEY_HASH),
+        "studio_url": _KAI_STUDIO_URL if _KAI_KEY_HASH else None,
+    }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

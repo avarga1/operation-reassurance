@@ -81,6 +81,14 @@ def is_test_file(path: Path, root: Path | None = None) -> bool:
     return name.startswith("test_") or name.endswith("_test") or name.endswith(".spec")
 
 
+def walk_repos(
+    roots: list[Path],
+    ignore: set[str] | None = None,
+) -> list[RepoIndex]:
+    """Walk multiple repository roots and return one RepoIndex per root."""
+    return [walk_repo(root, ignore=ignore) for root in roots]
+
+
 def walk_repo(
     root: Path,
     ignore: set[str] | None = None,
